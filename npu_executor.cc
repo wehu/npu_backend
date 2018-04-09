@@ -54,15 +54,18 @@ namespace npu {
     }
 
     void *NpuExecutor::Allocate(uint64 size) {
-        return nullptr;
+        return new char[size];
     }
 
     void *NpuExecutor::AllocateSubBuffer(DeviceMemoryBase *mem,
                                          uint64 offset_bytes, uint64 size_bytes) {
-        return nullptr;
+        return reinterpret_cast<char *>(mem->opaque()) + offset_bytes;
     }
 
     void NpuExecutor::Deallocate(DeviceMemoryBase *mem) {
+        if (!mem->is_sub_buffer()) {
+            delete[] static_cast<char *>(mem->opaque());
+        }
     }
 
     bool NpuExecutor::HostMemoryRegister(void *location, uint64 size) {
@@ -78,11 +81,13 @@ namespace npu {
     }
 
     bool NpuExecutor::SynchronousMemZero(DeviceMemoryBase *location, uint64 size) {
+        memset(location->opaque(), 0, size);
         return true;
     }
 
     bool NpuExecutor::SynchronousMemSet(DeviceMemoryBase *location, int value,
                                         uint64 size) {
+        memset(location->opaque(), value, size);
         return true;
     }
 

@@ -31,7 +31,7 @@ namespace npu {
             return GetElapsedMilliseconds() * 1000;
         }
 
-        uint64 Nanoseconds() const override { return GetElapsedMilliseconds() * 1000; }
+        uint64 Nanoseconds() const override { return GetElapsedMilliseconds() * 1000000; }
 
     private:
         NpuExecutor *parent_;
