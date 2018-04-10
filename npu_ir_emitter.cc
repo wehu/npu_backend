@@ -30,14 +30,19 @@
 namespace npu {
 
     IrEmitter::IrEmitter(const HloModuleConfig &hlo_module_config,
+                         const HloComputation* hlo_computation,
                          IrEmitterContext *ir_emitter_context)
             : ir_emitter_context_(ir_emitter_context),
               module_(ir_emitter_context->llvm_module()),
               ir_builder_(module_->getContext()),
-              hlo_module_config_(hlo_module_config) {
+
+              hlo_module_config_(hlo_module_config),
+              hlo_computation_(hlo_computation) {
         ir_builder_.setFastMathFlags(llvm_ir::GetFastMathFlags(
                 /*fast_math_enabled=*/hlo_module_config.debug_options()
                                               .xla_enable_fast_math()));
+
+        thunk_sequence_.reset(new NpuThunkSequence());
     }
 
     Status IrEmitter::DefaultAction(HloInstruction *hlo) {

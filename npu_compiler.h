@@ -50,6 +50,7 @@ namespace npu {
             };
         }
 
+        static const char* kTargetTriple;
         static const char* kDataLayout;
 
     private:

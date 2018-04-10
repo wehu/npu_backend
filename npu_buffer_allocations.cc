@@ -20,8 +20,6 @@ namespace se = ::perftools::gputools;
 
 namespace npu {
 
-    const int64 npuAlignBytes = 256;
-
     void NpuBufferAllocations::Builder::RegisterBuffer(BufferAllocation::Index index,
                                                     se::DeviceMemoryBase address) {
         InsertOrDie(&registered_buffers_, index, address);

@@ -7,13 +7,17 @@
 
 #include "tensorflow/compiler/xla/service/executable.h"
 
+#include "npu_thunk_schedule.h"
+
 namespace npu {
 
     using namespace xla;
 
     class NpuExecutable : public Executable {
     public:
-        NpuExecutable(std::unique_ptr<const HloModule> hlo_module,
+        NpuExecutable(std::unique_ptr<const NpuThunkSchedule> thunk_schedule,
+                      std::unique_ptr<const HloModule> hlo_module,
+                      std::unique_ptr<const BufferAssignment> assignment,
                       std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
                       std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map);
 
@@ -34,6 +38,10 @@ namespace npu {
         }
 
     private:
+
+        const std::unique_ptr<const NpuThunkSchedule> thunk_schedule_;
+
+        const std::unique_ptr<const BufferAssignment> assignment_;
 
         TF_DISALLOW_COPY_AND_ASSIGN(NpuExecutable);
     };

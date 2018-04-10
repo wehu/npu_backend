@@ -34,6 +34,7 @@ cc_library(
     ],
     deps = [
         ":npu_buffer_allocations",
+        ":npu_hlo_schedule",
         ":npu_stream_assignment",
         "//tensorflow/compiler/xla:array2d",
         "//tensorflow/compiler/xla:shape_tree",
@@ -86,6 +87,31 @@ cc_library(
 )
 
 cc_library(
+    name = "npu_hlo_schedule",
+    srcs = ["npu_hlo_schedule.cc"],
+    hdrs = ["npu_hlo_schedule.h"],
+    deps = [
+        ":npu_stream_assignment",
+        "//tensorflow/compiler/xla:statusor",
+        "//tensorflow/compiler/xla:types",
+        "//tensorflow/compiler/xla:util",
+        "//tensorflow/compiler/xla/service:hlo",
+        "//tensorflow/compiler/xla/service:hlo_ordering",
+        "//tensorflow/compiler/xla/service:hlo_reachability",
+        "//tensorflow/compiler/xla/service:hlo_scheduling",
+    ],
+)
+
+cc_library(
+    name = "npu_constants",
+    srcs = ["npu_constants.cc"],
+    hdrs = ["npu_constants.h"],
+    deps = [
+        "//tensorflow/compiler/xla:types",
+    ],
+)
+
+cc_library(
     name = "npu_ir_emitter",
     srcs = ["npu_ir_emitter.cc"],
     hdrs = [
@@ -93,6 +119,7 @@ cc_library(
         "npu_ir_emitter_context.h",
     ],
     deps = [
+        ":npu_executable",
         "//tensorflow/compiler/xla:literal_util",
         "//tensorflow/compiler/xla:shape_util",
         "//tensorflow/compiler/xla:status_macros",
@@ -151,6 +178,7 @@ cc_library(
     srcs = ["npu_buffer_allocations.cc"],
     hdrs = ["npu_buffer_allocations.h"],
     deps = [
+        ":npu_constants",
         "//tensorflow/compiler/xla:status_macros",
         "//tensorflow/compiler/xla:statusor",
         "//tensorflow/compiler/xla:types",

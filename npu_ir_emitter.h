@@ -25,6 +25,7 @@
 #include "tensorflow/core/platform/types.h"
 
 #include "npu_ir_emitter_context.h"
+#include "npu_thunk.h"
 
 namespace npu {
 
@@ -33,6 +34,7 @@ namespace npu {
     class IrEmitter : public DfsHloVisitorWithDefault {
     public:
         IrEmitter(const HloModuleConfig& hlo_module_config,
+                  const HloComputation* hlo_computation,
                   IrEmitterContext* ir_emitter_context);
         IrEmitter(const IrEmitter&) = delete;
         IrEmitter& operator=(const IrEmitter&) = delete;
@@ -70,6 +72,10 @@ namespace npu {
 
         Status FinishVisit(HloInstruction* root) override { return Status::OK(); }
 
+        std::unique_ptr<NpuThunkSequence> ConsumeThunkSequence() {
+            return std::move(thunk_sequence_);
+        }
+
     protected:
 
         IrEmitterContext* ir_emitter_context_;
@@ -78,6 +84,9 @@ namespace npu {
         llvm::IRBuilder<> ir_builder_;
 
         const HloModuleConfig& hlo_module_config_;
+        const HloComputation* hlo_computation_;
+
+        std::unique_ptr<NpuThunkSequence> thunk_sequence_;
 
     private:
 

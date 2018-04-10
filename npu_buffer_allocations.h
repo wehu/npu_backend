@@ -15,6 +15,8 @@
 #include "tensorflow/core/lib/gtl/array_slice.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 
+#include "npu_constants.h"
+
 namespace npu {
 
     using namespace xla;
