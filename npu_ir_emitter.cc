@@ -167,6 +167,18 @@ namespace npu {
         return Unimplemented("Rng is not implemented on NPU.");
     }
 
+    Status IrEmitter::HandleWhile(HloInstruction *xla_while) {
+        return Unimplemented("While is not implement on NPU");
+    }
+
+    Status IrEmitter::HandleGather(HloInstruction *gather) {
+        return Unimplemented("Cather is not implement on NPU");
+    }
+
+    Status IrEmitter::HandleCopy(HloInstruction *copy) {
+        return Unimplemented("Copy is not implement on NPU");
+    }
+
     Status IrEmitter::HandleBatchNormInference(HloInstruction *) {
         return Unimplemented(
                 "The NPU backend does not implement BatchNormInference directly.  It "

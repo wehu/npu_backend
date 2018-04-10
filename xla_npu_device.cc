@@ -5,6 +5,9 @@
 #include "tensorflow/core/common_runtime/device_factory.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/framework/kernel_def.pb.h"
+#include "tensorflow/compiler/xla/service/computation_placer.h"
+
+#include "npu_platform_id.h"
 
 namespace npu {
 
@@ -16,7 +19,8 @@ namespace npu {
 
     class XlaNpuDeviceFactory : public DeviceFactory {
     public:
-        Status CreateDevices(const SessionOptions& options, const string& name_prefix,
+        Status CreateDevices(const SessionOptions& options,
+                             const string& name_prefix,
                              std::vector<Device*>* devices) override;
     };
 
@@ -41,9 +45,11 @@ namespace npu {
         return Status::OK();
     }
 
+    // NPU XLA Factory registration
+
     REGISTER_LOCAL_DEVICE_FACTORY(DEVICE_XLA_NPU, XlaNpuDeviceFactory);
 
-// Kernel registrations
+    // Kernel registrations
 
     constexpr std::array<DataType, 6> kAllXlaNpuTypes = {
             {DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_BOOL}};
@@ -51,6 +57,9 @@ namespace npu {
     REGISTER_XLA_LAUNCH_KERNEL(DEVICE_XLA_NPU, XlaLocalLaunchOp, kAllXlaNpuTypes);
     REGISTER_XLA_DEVICE_KERNELS(DEVICE_XLA_NPU, kAllXlaNpuTypes);
 
+    // XLA backend registration
+
+    // NPU operator filter
     bool NpuOpFilter(KernelDef* kdef) {
         return true;
     }
@@ -62,3 +71,16 @@ namespace npu {
     REGISTER_XLA_BACKEND(DEVICE_NPU_XLA_JIT, kNpuAllTypes, NpuOpFilter);
 
 }  // namespace npu
+
+
+static std::unique_ptr<xla::ComputationPlacer> CreateComputationPlacer() {
+    return xla::MakeUnique<xla::ComputationPlacer>();
+}
+
+static bool InitModule() {
+    xla::ComputationPlacer::RegisterComputationPlacer(npu::npuPlatformId,
+                                                      &CreateComputationPlacer);
+    return true;
+}
+
+static bool module_initialized = InitModule();

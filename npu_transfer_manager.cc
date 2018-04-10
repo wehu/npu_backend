@@ -18,7 +18,6 @@
 #include "tensorflow/core/lib/gtl/cleanup.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
-#include "tensorflow/compiler/xla/service/computation_placer.h"
 
 namespace se = ::perftools::gputools;
 
@@ -49,15 +48,9 @@ static std::unique_ptr<xla::TransferManager> CreateNpuTransferManager() {
     return xla::MakeUnique<npu::NpuTransferManager>();
 }
 
-static std::unique_ptr<xla::ComputationPlacer> CreateComputationPlacer() {
-    return xla::MakeUnique<xla::ComputationPlacer>();
-}
-
 static bool InitModule() {
     xla::TransferManager::RegisterTransferManager(npu::npuPlatformId,
                                                   &CreateNpuTransferManager);
-    xla::ComputationPlacer::RegisterComputationPlacer(npu::npuPlatformId,
-                                                      &CreateComputationPlacer);
     return true;
 }
 

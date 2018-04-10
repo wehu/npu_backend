@@ -41,8 +41,6 @@ namespace npu {
 
         llvm::LLVMContext llvm_context;
         std::string buffer;
-        llvm::raw_string_ostream error(buffer);
-        llvm::DiagnosticPrinterRawOStream printer(error);
 
         llvm::Module llvm_module(module->name().c_str(), llvm_context);
         // Set the target triple and the data layout.
@@ -57,7 +55,7 @@ namespace npu {
         IrEmitter ir_emitter(module->config(),
                              &ir_emitter_context);
         {
-            XLA_SCOPED_LOGGING_TIMER("GpuCompiler::RunBackend - IR emission");
+            XLA_SCOPED_LOGGING_TIMER("NpuCompiler::RunBackend - IR emission");
             TF_RETURN_IF_ERROR(
                     entry_computation->root_instruction()->Accept(&ir_emitter));
         }
