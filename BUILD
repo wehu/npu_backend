@@ -50,7 +50,10 @@ cc_library(
         "npu_stream.h",
         "npu_timer.h",
     ],
-    deps = ["//tensorflow/stream_executor"],
+    deps = [
+        ":npu_platform_id",
+        "//tensorflow/stream_executor",
+    ],
 )
 
 cc_library(

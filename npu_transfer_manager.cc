@@ -31,15 +31,13 @@ namespace npu {
 
     Status NpuTransferManager::TransferLiteralToInfeed(se::StreamExecutor* executor,
                                                        const Literal& literal) {
-
-      return Status::OK();
+        return Status::OK();
     }
 
     Status NpuTransferManager::TransferBufferToInfeed(se::StreamExecutor* executor,
                                                       int64 size,
                                                       const void* source) {
-
-      return Status::OK();
+        return Status::OK();
     }
 
 }  // namespace npu

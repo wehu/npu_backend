@@ -3,6 +3,9 @@
 
 #include "tensorflow/stream_executor/platform/thread_annotations.h"
 #include "tensorflow/stream_executor/stream_executor_internal.h"
+#include "tensorflow/stream_executor/lib/threadpool.h"
+#include "tensorflow/stream_executor/stream_executor_internal.h"
+
 #include "npu_executor.h"
 
 namespace npu {
@@ -11,10 +14,8 @@ namespace npu {
 
     class NpuStream : public internal::StreamInterface {
     public:
-        explicit NpuStream(NpuExecutor *parent)
-                : parent_(parent) {}
+        NpuStream(NpuExecutor *parent);
 
-  // Note: teardown is handled by a parent's call to DeallocateStream.
         ~NpuStream() override {}
 
         bool Init();
@@ -22,11 +23,27 @@ namespace npu {
         void Destroy();
 
         bool IsIdle() const;
-  
+
+        bool EnqueueTask(std::function<void()> task);
+
+        void *CudaStreamHack() override { return nullptr; }
+        void **CudaStreamMemberHack() override { return nullptr; }
+
+        void BlockUntilDone();
+
         NpuExecutor *parent() const { return parent_; }
 
     private:
-        NpuExecutor *parent_;  // Executor that spawned this stream.
+        NpuExecutor *parent_;
+
+        // Use only one thread and own task queue to preserve FIFO ordering
+        // for the operations enqueued by any given stream.
+        static const int kExecutorThreads = 1;
+        std::unique_ptr<port::ThreadPool> host_executor_;
+
+        mutex mu_;
+        int pending_tasks_ GUARDED_BY(mu_) = 0;
+        condition_variable completion_condition_;
 
     };
 

@@ -4,6 +4,12 @@
 
 namespace npu {
 
+    NpuStream::NpuStream(NpuExecutor *parent)
+            : parent_(parent),
+              host_executor_(new port::ThreadPool(port::Env::Default(),
+                                                  port::ThreadOptions(),
+                                                  "host_executor", kExecutorThreads)) {}
+
     bool NpuStream::Init() {
         return true;
     }
@@ -13,6 +19,29 @@ namespace npu {
 
     bool NpuStream::IsIdle() const {
         return false;
+    }
+
+    bool NpuStream::EnqueueTask(std::function<void()> task) {
+        {
+            mutex_lock lock(mu_);
+            ++pending_tasks_;
+        }
+        host_executor_->Schedule([this, task]() {
+            task();
+            {
+                mutex_lock lock(mu_);
+                --pending_tasks_;
+            }
+            completion_condition_.notify_all();
+        });
+        return true;
+    }
+
+    void NpuStream::BlockUntilDone() {
+        mutex_lock lock(mu_);
+        while (pending_tasks_ != 0) {
+            completion_condition_.wait(lock);
+        }
     }
 
     NpuStream *AsNpuStream(Stream *stream) {

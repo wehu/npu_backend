@@ -43,7 +43,7 @@ namespace npu {
         void Deallocate(DeviceMemoryBase *mem) override;
 
         void *HostMemoryAllocate(uint64 size) override {
-            return nullptr;
+            return new char[size];
         }
 
         void HostMemoryDeallocate(void *location) override {
