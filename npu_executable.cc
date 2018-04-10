@@ -107,8 +107,8 @@ namespace npu {
                                  std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map)
     : Executable(std::move(hlo_module), std::move(hlo_profile_printer_data),
                  std::move(hlo_profile_index_map)),
-    thunk_schedule_(std::move(thunk_schedule)),
-    assignment_(std::move(assignment)) {
+      thunk_schedule_(std::move(thunk_schedule)),
+      assignment_(std::move(assignment)) {
 
     };
 

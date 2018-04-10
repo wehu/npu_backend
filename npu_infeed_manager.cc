@@ -78,7 +78,7 @@ namespace npu {
         return host_to_device_stream_.get();
     }
 
-    NpuInfeedManager *GetOrCreateInfeedManager() {
+    NpuInfeedManager *GetOrCreateNpuInfeedManager() {
         static NpuInfeedManager *manager = new NpuInfeedManager;
         return manager;
     }

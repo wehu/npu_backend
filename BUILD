@@ -244,6 +244,7 @@ cc_library(
     deps = [
         ":npu_compiler",
         ":npu_executable",
+        ":npu_infeed_manager",
         ":npu_platform",
         ":npu_transfer_manager",
         "//tensorflow/compiler/jit:xla_cpu_device",
