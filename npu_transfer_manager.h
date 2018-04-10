@@ -11,6 +11,8 @@
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 #include "tensorflow/core/platform/types.h"
 
+#include "npu_infeed_manager.h"
+
 namespace npu {
 
     using namespace xla;
@@ -25,6 +27,14 @@ namespace npu {
         Status TransferBufferToInfeed(perftools::gputools::StreamExecutor* executor,
                                       int64 size, const void* source) override;
     private:
+
+        StatusOr<NpuInfeedBuffer*> TransferBufferToInfeedInternal(
+                perftools::gputools::StreamExecutor* executor, int64 size,
+                const void* source);
+
+        Status EnqueueBuffersToInfeed(perftools::gputools::StreamExecutor* executor,
+                                      std::vector<NpuInfeedBuffer*> buffers);
+
         TF_DISALLOW_COPY_AND_ASSIGN(NpuTransferManager);
     };
 

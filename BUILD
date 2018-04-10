@@ -106,6 +106,18 @@ cc_library(
 )
 
 cc_library(
+    name = "npu_infeed_manager",
+    srcs = ["npu_infeed_manager.cc"],
+    hdrs = ["npu_infeed_manager.h"],
+    deps = [
+        "//tensorflow/compiler/xla:types",
+        "//tensorflow/compiler/xla:util",
+        "//tensorflow/core:lib",
+        "//tensorflow/core:stream_executor_no_cuda",
+    ],
+)
+
+cc_library(
     name = "npu_transfer_manager",
     srcs = ["npu_transfer_manager.cc"],
     hdrs = [
@@ -113,6 +125,7 @@ cc_library(
     ],
     deps = [
         ":npu_compiler",
+        ":npu_infeed_manager",
         "//tensorflow/compiler/xla:literal_util",
         "//tensorflow/compiler/xla:shape_util",
         "//tensorflow/compiler/xla:status_macros",
