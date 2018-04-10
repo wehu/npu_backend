@@ -8,6 +8,7 @@
 #include "tensorflow/compiler/xla/service/executable.h"
 
 #include "npu_thunk_schedule.h"
+#include "npu_buffer_allocations.h"
 
 namespace npu {
 
@@ -38,6 +39,13 @@ namespace npu {
         }
 
     private:
+
+        Status ExecuteThunks(const ServiceExecutableRunOptions* run_options,
+                             const NpuBufferAllocations& buffer_allocations,
+                             bool block_host_until_done,
+                             HloExecutionProfile* hlo_execution_profile);
+
+        const PointsToSet& GetRootPointsToSet() const;
 
         const std::unique_ptr<const NpuThunkSchedule> thunk_schedule_;
 

@@ -22,7 +22,7 @@ namespace se = ::perftools::gputools;
 namespace npu {
 
     /* static */ const char *NpuCompiler::kTargetTriple =
-            "e-i64:64-i128:128-v16:16-v32:32-n16:32:64";
+            "xxx";
     /* static */ const char *NpuCompiler::kDataLayout =
             "e-i64:64-i128:128-v16:16-v32:32-n16:32:64";
 
@@ -59,7 +59,7 @@ namespace npu {
 
         llvm::Module llvm_module(module->name().c_str(), llvm_context);
         // Set the target triple and the data layout.
-        llvm_module.setTargetTriple(kTargetTriple);
+        //llvm_module.setTargetTriple(kTargetTriple);
         llvm_module.setDataLayout(kDataLayout);
 
         // Determine the HLO schedule, which is an ordering of HLO instructions.  This
@@ -93,7 +93,7 @@ namespace npu {
 
         HloComputation* entry_computation = module->entry_computation();
         IrEmitter ir_emitter(module->config(), entry_computation,
-                                     &ir_emitter_context);
+                             &ir_emitter_context);
         {
             XLA_SCOPED_LOGGING_TIMER("NpuCompiler::RunBackend - IR emission");
             TF_RETURN_IF_ERROR(
