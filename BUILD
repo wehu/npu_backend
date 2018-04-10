@@ -24,7 +24,10 @@ filegroup(
 cc_library(
     name = "npu_executable",
     srcs = ["npu_executable.cc"],
-    hdrs = ["npu_executable.h"],
+    hdrs = [
+        "npu_executable.h",
+        "npu_thunk.h",
+    ],
     deps = ["//tensorflow/compiler/xla/service:executable"],
 )
 
@@ -114,6 +117,34 @@ cc_library(
         "//tensorflow/compiler/xla:util",
         "//tensorflow/core:lib",
         "//tensorflow/core:stream_executor_no_cuda",
+    ],
+)
+
+cc_library(
+    name = "npu_buffer_allocations",
+    srcs = ["npu_buffer_allocations.cc"],
+    hdrs = ["npu_buffer_allocations.h"],
+    deps = [
+        "//tensorflow/compiler/xla:status_macros",
+        "//tensorflow/compiler/xla:statusor",
+        "//tensorflow/compiler/xla:types",
+        "//tensorflow/compiler/xla:util",
+        "//tensorflow/compiler/xla/service:buffer_assignment",
+        "//tensorflow/compiler/xla/service:device_memory_allocator",
+        "//tensorflow/core:lib",
+        "//tensorflow/core:stream_executor_no_cuda",
+    ],
+)
+
+cc_library(
+    name = "npu_stream_assignment",
+    srcs = ["npu_stream_assignment.cc"],
+    hdrs = ["npu_stream_assignment.h"],
+    deps = [
+        "//tensorflow/compiler/xla:util",
+        "//tensorflow/compiler/xla/service:hlo",
+        "//tensorflow/compiler/xla/service:hlo_reachability",
+        "//tensorflow/core:lib",
     ],
 )
 

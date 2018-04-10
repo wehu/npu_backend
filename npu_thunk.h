@@ -1,0 +1,75 @@
+//
+// Created by wehu on 18-4-10.
+//
+
+#ifndef TENSORFLOW_NPU_THUNK_H
+#define TENSORFLOW_NPU_THUNK_H
+
+#include <memory>
+#include <vector>
+
+#include "tensorflow/compiler/xla/service/hlo_instruction.h"
+#include "tensorflow/core/lib/core/status.h"
+#include "tensorflow/core/platform/stream_executor_no_cuda.h"
+
+#include "npu_buffer_allocations.h"
+
+namespace npu {
+
+    using namespace xla;
+
+    class NpuExecutable;
+
+    class NpuThunk {
+    public:
+        enum class Kind {
+            kConditional,
+            kConvolution,
+            kCopy,
+            kFft,
+            kInfeed,
+            kSequential,
+            kTuple,
+            kWhile,
+        };
+
+        explicit NpuThunk(Kind kind, const HloInstruction *hlo_instruction)
+                : kind_(kind), hlo_instruction_(hlo_instruction) {}
+
+        virtual ~Thunk() {}
+
+        NpuThunk(const NpuThunk &) = delete;
+
+        NpuThunk &operator=(const NpuThunk &) = delete;
+
+        Kind kind() const { return kind_; }
+
+        const HloInstruction *hlo_instruction() const { return hlo_instruction_; }
+
+        virtual tensorflow::Status Initialize(const NpuExecutable &executable) {
+            return tensorflow::Status::OK();
+        }
+
+        virtual bool ShouldHaltAllActivityBeforeRunning(
+                perftools::gputools::Stream * /*stream*/) {
+            return false;
+        }
+
+        virtual bool ShouldBlockFutureThunks() { return false; }
+
+        virtual tensorflow::Status ExecuteOnStream(
+                const NpuBufferAllocations &buffer_allocations,
+                perftools::gputools::Stream *stream) = 0;
+
+    private:
+        Kind kind_;
+        const HloInstruction *hlo_instruction_;
+    };
+
+// A sequence of thunks.
+    using ThunkSequence = std::vector<std::unique_ptr<NpuThunk>>;
+
+}  // namespace npu
+
+
+#endif //TENSORFLOW_NPU_THUNK_H

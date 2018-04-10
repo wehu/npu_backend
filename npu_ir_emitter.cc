@@ -179,6 +179,10 @@ namespace npu {
         return Unimplemented("Copy is not implement on NPU");
     }
 
+    Status IrEmitter::HandleConditional(HloInstruction *copy) {
+        return Unimplemented("Conditional is not implement on NPU");
+    }
+
     Status IrEmitter::HandleBatchNormInference(HloInstruction *) {
         return Unimplemented(
                 "The NPU backend does not implement BatchNormInference directly.  It "

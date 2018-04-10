@@ -63,6 +63,7 @@ namespace npu {
         Status HandleWhile(HloInstruction* xla_while) override;
         Status HandleGather(HloInstruction* gather) override;
         Status HandleCopy(HloInstruction* copy) override;
+        Status HandleConditional(HloInstruction* conditional) override;
         Status HandleBatchNormInference(HloInstruction* batch_norm) override;
         Status HandleBatchNormTraining(HloInstruction* batch_norm) override;
         Status HandleBatchNormGrad(HloInstruction* batch_norm) override;
