@@ -36,7 +36,7 @@ namespace npu {
         explicit NpuThunk(Kind kind, const HloInstruction *hlo_instruction)
                 : kind_(kind), hlo_instruction_(hlo_instruction) {}
 
-        virtual ~Thunk() {}
+        virtual ~NpuThunk() {}
 
         NpuThunk(const NpuThunk &) = delete;
 
@@ -66,8 +66,7 @@ namespace npu {
         const HloInstruction *hlo_instruction_;
     };
 
-// A sequence of thunks.
-    using ThunkSequence = std::vector<std::unique_ptr<NpuThunk>>;
+    using NpuThunkSequence = std::vector<std::unique_ptr<NpuThunk>>;
 
 }  // namespace npu
 

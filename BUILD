@@ -23,12 +23,38 @@ filegroup(
 
 cc_library(
     name = "npu_executable",
-    srcs = ["npu_executable.cc"],
+    srcs = [
+        "npu_executable.cc",
+        "npu_thunk_schedule.cc",
+    ],
     hdrs = [
         "npu_executable.h",
         "npu_thunk.h",
+        "npu_thunk_schedule.h",
     ],
-    deps = ["//tensorflow/compiler/xla/service:executable"],
+    deps = [
+        ":npu_buffer_allocations",
+        ":npu_stream_assignment",
+        "//tensorflow/compiler/xla:array2d",
+        "//tensorflow/compiler/xla:shape_tree",
+        "//tensorflow/compiler/xla:shape_util",
+        "//tensorflow/compiler/xla:status_macros",
+        "//tensorflow/compiler/xla:statusor",
+        "//tensorflow/compiler/xla:types",
+        "//tensorflow/compiler/xla:util",
+        "//tensorflow/compiler/xla:xla_data_proto",
+        "//tensorflow/compiler/xla/service:buffer_assignment",
+        "//tensorflow/compiler/xla/service:device_memory_allocator",
+        "//tensorflow/compiler/xla/service:executable",
+        "//tensorflow/compiler/xla/service:hlo",
+        "//tensorflow/compiler/xla/service:hlo_execution_profile",
+        "//tensorflow/compiler/xla/service:logical_buffer",
+        "//tensorflow/compiler/xla/service:shaped_buffer",
+        "//tensorflow/compiler/xla/service:transfer_manager",
+        "//tensorflow/compiler/xla/service:tuple_points_to_analysis",
+        "//tensorflow/core:lib",
+        "//tensorflow/core:stream_executor_no_cuda",
+    ],
 )
 
 cc_library(
