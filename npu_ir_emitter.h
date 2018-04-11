@@ -26,6 +26,7 @@
 
 #include "npu_ir_emitter_context.h"
 #include "npu_thunk.h"
+#include "npu_hlo_to_ir_bindings.h"
 
 namespace npu {
 
@@ -76,12 +77,42 @@ namespace npu {
             return std::move(thunk_sequence_);
         }
 
+        Status EmitTargetElementLoop(
+                const HloInstruction& hlo,
+                const llvm_ir::ElementGenerator& body_emitter);
+
+        // Same as `EmitTargetElementLoop`, but in given `thunk` rather than
+        // `LastThunk()`.
+        Status EmitTargetElementLoopInThunk(
+                const HloInstruction& hlo, const llvm_ir::ElementGenerator& body_emitter,
+                NpuThunk* thunk);
+
     protected:
+
+        llvm_ir::IrArray GetIrArray(const HloInstruction& inst,
+                                    const HloInstruction& consumer,
+                                    const ShapeIndex& shape_index = {}) {
+            return bindings_.GetIrArray(inst, consumer, shape_index);
+        }
+        // A convenient helper for calling HloToIrBindings::GetBasePointer.
+        llvm::Value* GetBasePointer(const HloInstruction& inst) const {
+            return bindings_.GetBasePointer(inst);
+        }
+        // A convenient helper for calling BufferAssignment::GetUniqueTopLevelSlice.
+        BufferAllocation::Slice GetAllocationSlice(const HloInstruction& hlo) const {
+            return ir_emitter_context_->buffer_assignment()
+                    .GetUniqueTopLevelSlice(&hlo)
+                    .ConsumeValueOrDie();
+        }
+
+        NpuThunk* LastThunk() const { return thunk_sequence_->back().get(); }
 
         IrEmitterContext* ir_emitter_context_;
         llvm::Module* module_;
 
         llvm::IRBuilder<> ir_builder_;
+
+        NpuHloToIrBindings bindings_;
 
         const HloModuleConfig& hlo_module_config_;
         const HloComputation* hlo_computation_;

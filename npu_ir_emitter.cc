@@ -27,6 +27,8 @@
 #include "tensorflow/compiler/xla/window_util.h"
 #include "tensorflow/core/lib/core/errors.h"
 
+#include "npu_tuple_thunk.h"
+
 namespace npu {
 
     IrEmitter::IrEmitter(const HloModuleConfig &hlo_module_config,
@@ -35,7 +37,9 @@ namespace npu {
             : ir_emitter_context_(ir_emitter_context),
               module_(ir_emitter_context->llvm_module()),
               ir_builder_(module_->getContext()),
-
+              bindings_(ir_emitter_context->hlo_module(),
+                        &ir_emitter_context->buffer_assignment(), &ir_builder_, module_,
+                        false),
               hlo_module_config_(hlo_module_config),
               hlo_computation_(hlo_computation) {
         ir_builder_.setFastMathFlags(llvm_ir::GetFastMathFlags(
@@ -46,19 +50,54 @@ namespace npu {
     }
 
     Status IrEmitter::DefaultAction(HloInstruction *hlo) {
-        return Status::OK();
+        //thunk_sequence_->emplace_back(BuildKernelThunk(hlo));
+        ElementalIrEmitter::HloToElementGeneratorMap operand_to_generator;
+        for (const HloInstruction* operand : hlo->operands()) {
+            operand_to_generator[operand] = [=](const llvm_ir::IrArray::Index& index) {
+                return GetIrArray(*operand, *hlo)
+                        .EmitReadArrayElement(index, &ir_builder_);
+            };
+        }
+        return EmitTargetElementLoop(
+                *hlo, ElementalIrEmitter(hlo_module_config_, module_, &ir_builder_)
+                        .MakeElementGenerator(hlo, operand_to_generator));
     }
 
     Status IrEmitter::HandleConstant(HloInstruction *constant) {
-        return Unimplemented("Constant is not implement on NPU");
+        const Literal& literal = constant->literal();
+        llvm::Constant* initializer =
+                llvm_ir::ConvertLiteralToIrConstant(literal, module_);
+        llvm::GlobalVariable* global_for_const = new llvm::GlobalVariable(
+                *module_, initializer->getType(),
+                /*isConstant=*/true, llvm::GlobalValue::PrivateLinkage, initializer,
+                /*Name=*/"");
+        VLOG(2) << "HandleConstant: " << constant->ToString() << std::endl
+                << "  emitted_value: " << llvm_ir::DumpToString(*global_for_const)
+                << std::endl
+                << "  its type: "
+                << llvm_ir::DumpToString(*global_for_const->getType());
+        bindings_.BindHloToIrValue(*constant, global_for_const);
+        return Status::OK();
     }
 
     Status IrEmitter::HandleBitcast(HloInstruction *bitcast) {
-        return Unimplemented("Bitcast is not implement on NPU");
+        VLOG(2) << "HandleBitcast: " << bitcast->ToString();
+        const HloInstruction* operand = bitcast->operand(0);
+        if (bindings_.BoundToIrValue(*operand)) {
+            bindings_.BindHloToIrValue(*bitcast, GetBasePointer(*operand));
+        }
+        return Status::OK();
     }
 
     Status IrEmitter::HandleGetTupleElement(HloInstruction *get_tuple_element) {
-        return Unimplemented("GetTupleElement is not implement on NPU");
+        auto operand = get_tuple_element->operand(0);
+        CHECK(bindings_.BoundToIrValue(*operand));
+        bindings_.BindHloToIrValue(
+                *get_tuple_element,
+                llvm_ir::EmitGetTupleElement(
+                        get_tuple_element->shape(), get_tuple_element->tuple_index(),
+                        /*alignment=*/1, GetBasePointer(*operand), &ir_builder_, module_));
+        return Status::OK();
     }
 
     Status IrEmitter::HandleSort(HloInstruction *) {
@@ -82,7 +121,28 @@ namespace npu {
     }
 
     Status IrEmitter::HandleTuple(HloInstruction *tuple) {
-        return Unimplemented("Tuple is not implemented on NPU");
+        bool all_tuple_elements_have_buffer =
+                c_all_of(tuple->operands(), [&](HloInstruction* tuple_element) {
+                    return ir_emitter_context_->buffer_assignment().HasTopLevelAllocation(
+                            tuple_element);
+                });
+        if (all_tuple_elements_have_buffer) {
+            std::vector<BufferAllocation::Slice> tuple_element_buffers;
+            for (const HloInstruction* tuple_element : tuple->operands()) {
+                tuple_element_buffers.push_back(GetAllocationSlice(*tuple_element));
+            }
+            thunk_sequence_->emplace_back(MakeUnique<NpuTupleThunk>(
+                    tuple_element_buffers, GetAllocationSlice(*tuple), tuple));
+            return Status::OK();
+        }
+        //thunk_sequence_->emplace_back(BuildKernelThunk(tuple));
+        std::vector<llvm::Value*> base_ptrs;
+        for (const HloInstruction* operand : tuple->operands()) {
+            base_ptrs.push_back(GetBasePointer(*operand));
+        }
+        llvm_ir::EmitTuple(GetIrArray(*tuple, *tuple), base_ptrs, &ir_builder_,
+                           module_);
+        return Status::OK();
     }
 
     Status IrEmitter::HandleSelect(HloInstruction *select) {
@@ -211,5 +271,19 @@ namespace npu {
                         "to a cudnn CustomCall using CudnnBatchNormRewriter.");
     }
 
+    Status IrEmitter::EmitTargetElementLoopInThunk(
+            const HloInstruction& hlo,
+            const llvm_ir::ElementGenerator& element_generator, NpuThunk* thunk) {
+        VLOG(3) << bindings_.ToString();
+        return Status::OK();
+    }
+
+    Status IrEmitter::EmitTargetElementLoop(
+            const HloInstruction& hlo,
+            const llvm_ir::ElementGenerator& element_generator) {
+        CHECK(NpuThunk::Kind::kKernel == LastThunk()->kind());
+        return EmitTargetElementLoopInThunk(hlo, element_generator,
+                                            static_cast<NpuThunk*>(LastThunk()));
+    }
 
 }  // namespace npu

@@ -22,15 +22,34 @@ filegroup(
 )
 
 cc_library(
+    name = "npu_hlo_to_ir_bindings",
+    srcs = ["npu_hlo_to_ir_bindings.cc"],
+    hdrs = ["npu_hlo_to_ir_bindings.h"],
+    deps = [
+        "//tensorflow/compiler/xla:util",
+        "//tensorflow/compiler/xla/service:buffer_assignment",
+        "//tensorflow/compiler/xla/service:hlo",
+        "//tensorflow/compiler/xla/service/llvm_ir:alias_analysis",
+        "//tensorflow/compiler/xla/service/llvm_ir:ir_array",
+        "//tensorflow/compiler/xla/service/llvm_ir:llvm_util",
+        "//tensorflow/compiler/xla/service/llvm_ir:tuple_ops",
+        "//tensorflow/core:lib",
+        "@llvm//:core",
+    ],
+)
+
+cc_library(
     name = "npu_executable",
     srcs = [
         "npu_executable.cc",
         "npu_thunk_schedule.cc",
+        "npu_tuple_thunk.cc",
     ],
     hdrs = [
         "npu_executable.h",
         "npu_thunk.h",
         "npu_thunk_schedule.h",
+        "npu_tuple_thunk.h",
     ],
     deps = [
         ":npu_buffer_allocations",
@@ -120,6 +139,7 @@ cc_library(
     ],
     deps = [
         ":npu_executable",
+        ":npu_hlo_to_ir_bindings",
         "//tensorflow/compiler/xla:literal_util",
         "//tensorflow/compiler/xla:shape_util",
         "//tensorflow/compiler/xla:status_macros",

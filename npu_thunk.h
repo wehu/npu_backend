@@ -31,6 +31,7 @@ namespace npu {
             kSequential,
             kTuple,
             kWhile,
+            kKernel,
         };
 
         explicit NpuThunk(Kind kind, const HloInstruction *hlo_instruction)
