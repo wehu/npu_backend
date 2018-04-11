@@ -57,7 +57,6 @@ namespace npu {
     }
 
     Status IrEmitter::DefaultAction(HloInstruction *hlo) {
-        VLOG(0) << hlo->ToString();
         thunk_sequence_->emplace_back(BuildKernelThunk(hlo));
         ElementalIrEmitter::HloToElementGeneratorMap operand_to_generator;
         for (const HloInstruction* operand : hlo->operands()) {
@@ -98,13 +97,6 @@ namespace npu {
     }
 
     Status IrEmitter::HandleGetTupleElement(HloInstruction *get_tuple_element) {
-        auto operand = get_tuple_element->operand(0);
-        CHECK(bindings_.BoundToIrValue(*operand));
-        bindings_.BindHloToIrValue(
-                *get_tuple_element,
-                llvm_ir::EmitGetTupleElement(
-                        get_tuple_element->shape(), get_tuple_element->tuple_index(),
-                        /*alignment=*/1, GetBasePointer(*operand), &ir_builder_, module_));
         return Status::OK();
     }
 
@@ -239,7 +231,20 @@ namespace npu {
     }
 
     Status IrEmitter::HandleRng(HloInstruction *random) {
-        return Unimplemented("Rng is not implemented on NPU.");
+        thunk_sequence_->push_back(BuildKernelThunk(random));
+        ElementalIrEmitter::HloToElementGeneratorMap operand_to_generator;
+        for (const HloInstruction* operand : random->operands()) {
+            operand_to_generator[operand] = [=](const llvm_ir::IrArray::Index& index) {
+                return GetIrArray(*operand, *random)
+                        .EmitReadArrayElement(index, &ir_builder_);
+            };
+        }
+
+        return llvm_ir::LoopEmitter(
+                ElementalIrEmitter(hlo_module_config_, module_, &ir_builder_)
+                        .MakeElementGenerator(random, operand_to_generator),
+                GetIrArray(*random, *random), &ir_builder_)
+                .EmitLoop(IrName(random));
     }
 
     Status IrEmitter::HandleWhile(HloInstruction *xla_while) {
@@ -284,7 +289,7 @@ namespace npu {
     Status IrEmitter::EmitTargetElementLoopInThunk(
             const HloInstruction& hlo,
             const llvm_ir::ElementGenerator& element_generator, NpuKernelThunk* thunk) {
-        VLOG(0) << bindings_.ToString();
+        VLOG(3) << bindings_.ToString();
         const Shape& element_shape = hlo.IsMultiOutputFusion()
                                      ? ShapeUtil::GetSubshape(hlo.shape(), {0})
                                      : hlo.shape();

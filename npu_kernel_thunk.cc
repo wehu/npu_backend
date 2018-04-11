@@ -36,6 +36,7 @@ namespace npu {
     tensorflow::Status NpuKernelThunk::ExecuteOnStream(
             const NpuBufferAllocations &buffer_allocations, se::Stream *stream) {
         // Load the kernel.
+
         se::StreamExecutor *executor = stream->parent();
         const se::KernelBase *kernel = nullptr;
         {
@@ -50,7 +51,7 @@ namespace npu {
             kernel = &it->second;
         }
 
-        VLOG(3) << "Launching " << kernel->name();
+        VLOG(0) << "Launching " << kernel_name_;
         // Launch the kernel with potentially multiple blocks and threads.
         static constexpr int kKernelArgsLimit = 1024;
         auto kernel_args = MakeUnique<se::KernelArgsArray<kKernelArgsLimit>>();
