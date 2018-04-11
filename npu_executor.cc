@@ -65,7 +65,7 @@ namespace npu {
 
     void NpuExecutor::Deallocate(DeviceMemoryBase *mem) {
         if (!mem->is_sub_buffer()) {
-       //     delete[] static_cast<char *>(mem->opaque());
+            delete[] static_cast<char *>(mem->opaque());
         }
     }
 

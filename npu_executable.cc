@@ -198,6 +198,7 @@ namespace npu {
         // TODO(b/30100571): we could potentially postpone deallocating the temp
         // buffers until a different computation is executed.
         if (block_host_until_done) {
+            
             Status block_status = main_stream->BlockHostUntilDone();
             if (!block_status.ok()) {
                 return InternalError(
@@ -259,8 +260,8 @@ namespace npu {
                 buffer_allocations_builder.Build(*assignment_, executor->device_ordinal(),
                                                  memory_allocator));
 
-        bool block_host_until_done =
-                !memory_allocator->AllowsAsynchronousDeallocation();
+        bool block_host_until_done = true;
+               // !memory_allocator->AllowsAsynchronousDeallocation();
         TF_RETURN_IF_ERROR(ExecuteThunks(run_options, *buffer_allocations,
                                          block_host_until_done,
                                          hlo_execution_profile));
