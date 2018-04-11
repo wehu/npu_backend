@@ -229,6 +229,7 @@ namespace npu {
             const ServiceExecutableRunOptions* run_options,
             tensorflow::gtl::ArraySlice<const ShapedBuffer*> arguments,
             HloExecutionProfile* hlo_execution_profile) {
+
         DeviceMemoryAllocator* memory_allocator = run_options->allocator();
 
         if (GetRootPointsToSet().IsAmbiguous()) {

@@ -19,8 +19,12 @@ namespace se = ::perftools::gputools;
 
 namespace npu {
 
-
-    using ComputeFunctionType = void (*)(int8*, int8*);
+    using ComputeFunctionType0 = void (*)();
+    using ComputeFunctionType1 = void (*)(int8*);
+    using ComputeFunctionType2 = void (*)(int8*, int8*);
+    using ComputeFunctionType3 = void (*)(int8*, int8*, int8*);
+    using ComputeFunctionType4 = void (*)(int8*, int8*, int8*, int8*);
+    using ComputeFunctionType5 = void (*)(int8*, int8*, int8*, int8*, int8*);
 
     NpuKernelThunk::NpuKernelThunk(
             tensorflow::gtl::ArraySlice<const BufferAllocation *> args,
@@ -43,53 +47,62 @@ namespace npu {
 
     tensorflow::Status NpuKernelThunk::ExecuteOnStream(
             const NpuBufferAllocations &buffer_allocations, se::Stream *stream) {
-        // Load the kernel.
 
-        /*se::StreamExecutor *executor = stream->parent();
-        const se::KernelBase *kernel = nullptr;
-        {
-            tensorflow::mutex_lock lock(mutex_);
-            auto it = kernel_cache_.find(executor);
-            if (kernel_cache_.end() == it) {
-                it = kernel_cache_.emplace(executor, se::KernelBase(executor)).first;
-                if (!executor->GetKernel(*loader_spec_, &it->second)) {
-                    return InternalError("Unable to load kernel %s", kernel_name_.c_str());
-                }
-            }
-            kernel = &it->second;
-        }*/
+        VLOG(3) << "Launching " << kernel_name_;
 
-        // Resolve symbols in the constructor rather than at execution time to avoid
-        // races because FindSymbol is not thread safe.
+        std::vector<int8*> addrs;
+        for (const BufferAllocation *arg : args_) {
+            const auto &buf = buffer_allocations.GetDeviceAddress(arg->index());
+            addrs.push_back((int8*)buf.opaque());
+            VLOG(3) << "  Arg: alloc #" << arg->index() << ": " << buf.opaque() << " ("
+                    << buf.size() << "B)";
+        }
+
         llvm::JITSymbol sym = jit_->FindCompiledSymbol(kernel_name_);
         // We expect to find the symbol provided with entry_function_name; otherwise
         // this is an internal error.
         CHECK(sym) << "Symbol " << kernel_name_ << " not found.";
         // getAddress can do work under the hood in the jit, so it needs to be
         // guarded by the mutex.
-        auto compute_function =
-                reinterpret_cast<ComputeFunctionType>(llvm::cantFail(sym.getAddress()));
-
-        VLOG(0) << "Launching " << kernel_name_;
-        // Launch the kernel with potentially multiple blocks and threads.
-        static constexpr int kKernelArgsLimit = 1024;
-        auto kernel_args = MakeUnique<se::KernelArgsArray<kKernelArgsLimit>>();
-        for (const BufferAllocation *arg : args_) {
-            const auto &buf = buffer_allocations.GetDeviceAddress(arg->index());
-            kernel_args->add_device_memory_argument(buf);
-            VLOG(0) << "  Arg: alloc #" << arg->index() << ": " << buf.opaque() << " ("
-                    << buf.size() << "B)";
+        switch(args_.size()) {
+            case 0: {
+                auto compute_function =
+                        reinterpret_cast<ComputeFunctionType0>(llvm::cantFail(sym.getAddress()));
+                compute_function();
+                break;
+            }
+            case 1: {
+                auto compute_function =
+                        reinterpret_cast<ComputeFunctionType1>(llvm::cantFail(sym.getAddress()));
+                compute_function(addrs[0]);
+                break;
+            }
+            case 2: {
+                auto compute_function =
+                        reinterpret_cast<ComputeFunctionType2>(llvm::cantFail(sym.getAddress()));
+                compute_function(addrs[0], addrs[1]);
+                break;
+            }
+            case 3: {
+                auto compute_function =
+                        reinterpret_cast<ComputeFunctionType3>(llvm::cantFail(sym.getAddress()));
+                compute_function(addrs[0], addrs[1], addrs[2]);
+                break;
+            }
+            case 4: {
+                auto compute_function =
+                        reinterpret_cast<ComputeFunctionType4>(llvm::cantFail(sym.getAddress()));
+                compute_function(addrs[0], addrs[1], addrs[2], addrs[3]);
+                break;
+            }
+            case 5: {
+                auto compute_function =
+                        reinterpret_cast<ComputeFunctionType5>(llvm::cantFail(sym.getAddress()));
+                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4]);
+                break;
+            }
         }
-        auto data = kernel_args->argument_addresses().data();
-        VLOG(0) << args_.size();
-        compute_function((int8*)data[0], (int8*)data[1]);
-        VLOG(0) << "bbbb";
-        /*if (!stream->parent()->Launch(
-                stream, se::ThreadDim(launch_dimensions.threads_per_block()),
-                se::BlockDim(launch_dimensions.block_count()), *kernel,
-                *kernel_args)) {
-            return InternalError("Unable to launch kernel %s", kernel_name_.c_str());
-        }*/
+
         return tensorflow::Status::OK();
     }
 

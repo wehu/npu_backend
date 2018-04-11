@@ -65,7 +65,8 @@ namespace npu {
 
     void NpuExecutor::Deallocate(DeviceMemoryBase *mem) {
         if (!mem->is_sub_buffer()) {
-            delete[] static_cast<char *>(mem->opaque());
+            //FIXME why there is a double deleted;
+     //       delete[] static_cast<char *>(mem->opaque());
         }
     }
 

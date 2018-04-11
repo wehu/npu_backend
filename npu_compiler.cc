@@ -167,6 +167,8 @@ namespace npu {
         std::unique_ptr<HloProfileIndexMap> profile_index_map;
         std::unique_ptr<HloProfilePrinterData> profile_printer;
 
+        //VLOG(0) << llvm_ir::DumpModuleToString(*llvm_module);
+
         jit->AddModule(std::move(llvm_module));
         auto* npu_executable = new NpuExecutable(
                 std::move(jit),
