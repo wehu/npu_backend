@@ -118,8 +118,6 @@ namespace npu {
             HloExecutionProfile* hlo_execution_profile) {
         se::Stream* main_stream = run_options->stream();
 
-        std::pair<int, int> stream_compute_compatibility;
-
         bool do_profile = hlo_execution_profile != nullptr;
         if (do_profile) {
             LOG(WARNING) << "PROFILING: profiling is enabled";

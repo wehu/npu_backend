@@ -18,7 +18,7 @@ namespace npu {
     }
 
     bool NpuStream::IsIdle() const {
-        return false;
+        return pending_tasks_ == 0;
     }
 
     bool NpuStream::EnqueueTask(std::function<void()> task) {

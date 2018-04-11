@@ -171,23 +171,26 @@ namespace npu {
     }
 
     port::Status NpuExecutor::AllocateEvent(Event *event) {
-        return port::Status{port::error::UNIMPLEMENTED, ""};
+        //return port::Status{port::error::UNIMPLEMENTED, ""};
+        return AsNpuEvent(event)->Init();
     }
 
     port::Status NpuExecutor::DeallocateEvent(Event *event) {
-        return port::Status{port::error::UNIMPLEMENTED, ""};
+        return AsNpuEvent(event)->Destroy();
     }
 
     port::Status NpuExecutor::RecordEvent(Stream *stream, Event *event) {
-        return port::Status{port::error::UNIMPLEMENTED, ""};
+        return AsNpuEvent(event)->Record(stream);
     }
 
     port::Status NpuExecutor::WaitForEvent(Stream *stream, Event *event) {
-        return port::Status{port::error::UNIMPLEMENTED, ""};
+        AsNpuStream(stream)->EnqueueTask(
+                [stream]() { AsNpuStream(stream)->BlockUntilDone(); });
+        return port::Status::OK();
     }
 
     Event::Status NpuExecutor::PollForEventStatus(Event *event) {
-        return Event::Status::kError;
+        return AsNpuEvent(event)->PollForStatus();
     }
 
     bool NpuExecutor::AllocateStream(Stream *stream) {
@@ -332,16 +335,12 @@ namespace npu {
 
     std::unique_ptr<internal::EventInterface>
     NpuExecutor::CreateEventImplementation() {
-        //return std::unique_ptr<internal::EventInterface>(new NpuEvent(this));
-        LOG(WARNING) << "Events not currently supported by NpuExecutor.";
-        return nullptr;
+        return std::unique_ptr<internal::EventInterface>(new NpuEvent(this));
     }
 
     std::unique_ptr<internal::KernelInterface>
     NpuExecutor::CreateKernelImplementation() {
-        //return std::unique_ptr<internal::KernelInterface>(new NpuKernel());
-        LOG(WARNING) << "Kernel not currently supported by NpuExecutor.";
-        return nullptr;
+        return std::unique_ptr<internal::KernelInterface>(new NpuKernel());
     }
 
     std::unique_ptr<internal::StreamInterface>

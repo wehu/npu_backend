@@ -5,6 +5,7 @@
 #include "tensorflow/stream_executor/lib/status.h"
 
 #include "npu_stream.h"
+#include "tensorflow/core/lib/gtl/flatset.h"
 
 namespace npu {
 
@@ -20,13 +21,18 @@ namespace npu {
 
         port::Status Destroy();
 
-        port::Status Record(NpuStream* stream);
+        port::Status Record(Stream* stream);
 
         Event::Status PollForStatus();
 
     private:
         NpuExecutor* parent_;
+
+        tensorflow::gtl::FlatSet<Stream*> streams_;
+
     };
+
+    NpuEvent *AsNpuEvent(Event *event);
 
 }  // namespace npu
 
