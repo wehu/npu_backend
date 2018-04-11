@@ -50,7 +50,8 @@ namespace npu {
     }
 
     Status IrEmitter::DefaultAction(HloInstruction *hlo) {
-        //thunk_sequence_->emplace_back(BuildKernelThunk(hlo));
+        VLOG(0) << hlo->ToString();
+        thunk_sequence_->emplace_back(BuildKernelThunk(hlo));
         ElementalIrEmitter::HloToElementGeneratorMap operand_to_generator;
         for (const HloInstruction* operand : hlo->operands()) {
             operand_to_generator[operand] = [=](const llvm_ir::IrArray::Index& index) {
@@ -133,6 +134,7 @@ namespace npu {
             }
             thunk_sequence_->emplace_back(MakeUnique<NpuTupleThunk>(
                     tuple_element_buffers, GetAllocationSlice(*tuple), tuple));
+
             return Status::OK();
         }
         //thunk_sequence_->emplace_back(BuildKernelThunk(tuple));
@@ -142,6 +144,7 @@ namespace npu {
         }
         llvm_ir::EmitTuple(GetIrArray(*tuple, *tuple), base_ptrs, &ir_builder_,
                            module_);
+
         return Status::OK();
     }
 
@@ -274,16 +277,20 @@ namespace npu {
     Status IrEmitter::EmitTargetElementLoopInThunk(
             const HloInstruction& hlo,
             const llvm_ir::ElementGenerator& element_generator, NpuThunk* thunk) {
-        VLOG(3) << bindings_.ToString();
+        VLOG(0) << bindings_.ToString();
         return Status::OK();
     }
 
     Status IrEmitter::EmitTargetElementLoop(
             const HloInstruction& hlo,
             const llvm_ir::ElementGenerator& element_generator) {
-        CHECK(NpuThunk::Kind::kKernel == LastThunk()->kind());
+        //CHECK(NpuThunk::Kind::kKernel == LastThunk()->kind());
         return EmitTargetElementLoopInThunk(hlo, element_generator,
-                                            static_cast<NpuThunk*>(LastThunk()));
+                                            LastThunk());
+    }
+
+    std::unique_ptr<NpuThunk> IrEmitter::BuildKernelThunk(const HloInstruction* inst) {
+        return nullptr;
     }
 
 }  // namespace npu

@@ -105,6 +105,8 @@ namespace npu {
                     .ConsumeValueOrDie();
         }
 
+        std::unique_ptr<NpuThunk> BuildKernelThunk(const HloInstruction* inst);
+
         NpuThunk* LastThunk() const { return thunk_sequence_->back().get(); }
 
         IrEmitterContext* ir_emitter_context_;

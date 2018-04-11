@@ -6,6 +6,6 @@
 
 namespace npu {
 
-    const int64 npuAlignBytes = 256;
+    const int64 npuAlignBytes = 16;
 
 }  // namespace npu
