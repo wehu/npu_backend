@@ -17,7 +17,7 @@ namespace npu {
 
     using namespace perftools::gputools;
 
-    class NpuExecutor : public internal::StreamExecutorInterface {
+    class NpuExecutor : public perftools::gputools::internal::StreamExecutorInterface {
     public:
         explicit NpuExecutor(const PluginConfig &plugin_config)
                 : device_ordinal_(0),
@@ -147,13 +147,13 @@ namespace npu {
 
         dnn::DnnSupport *CreateDnn() override;
 
-        std::unique_ptr<internal::EventInterface> CreateEventImplementation() override;
+        std::unique_ptr<perftools::gputools::internal::EventInterface> CreateEventImplementation() override;
 
-        std::unique_ptr<internal::KernelInterface> CreateKernelImplementation() override;
+        std::unique_ptr<perftools::gputools::internal::KernelInterface> CreateKernelImplementation() override;
 
-        std::unique_ptr<internal::StreamInterface> GetStreamImplementation() override;
+        std::unique_ptr<perftools::gputools::internal::StreamInterface> GetStreamImplementation() override;
 
-        std::unique_ptr<internal::TimerInterface> GetTimerImplementation() override;
+        std::unique_ptr<perftools::gputools::internal::TimerInterface> GetTimerImplementation() override;
 
     private:
 

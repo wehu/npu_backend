@@ -4,6 +4,8 @@
 
 namespace npu {
 
+    using namespace perftools::gputools;
+
     NpuStream::NpuStream(NpuExecutor *parent)
             : parent_(parent),
               host_executor_(new port::ThreadPool(port::Env::Default(),

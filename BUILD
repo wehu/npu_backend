@@ -57,6 +57,7 @@ cc_library(
         ":npu_buffer_allocations",
         ":npu_hlo_schedule",
         ":npu_stream_assignment",
+        ":npu_stream_executor",
         "//tensorflow/compiler/xla:array2d",
         "//tensorflow/compiler/xla:shape_tree",
         "//tensorflow/compiler/xla:shape_util",

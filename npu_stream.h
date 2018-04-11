@@ -10,9 +10,7 @@
 
 namespace npu {
 
-    using namespace perftools::gputools;
-
-    class NpuStream : public internal::StreamInterface {
+    class NpuStream : public perftools::gputools::internal::StreamInterface {
     public:
         NpuStream(NpuExecutor *parent);
 
