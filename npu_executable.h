@@ -6,6 +6,7 @@
 #define TENSORFLOW_NPU_EXECUTABLE_H
 
 #include "tensorflow/compiler/xla/service/executable.h"
+#include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
 
 #include "npu_thunk_schedule.h"
 #include "npu_buffer_allocations.h"
@@ -16,7 +17,8 @@ namespace npu {
 
     class NpuExecutable : public Executable {
     public:
-        NpuExecutable(std::unique_ptr<const NpuThunkSchedule> thunk_schedule,
+        NpuExecutable(std::unique_ptr<xla::cpu::SimpleOrcJIT> jit,
+                      std::unique_ptr<const NpuThunkSchedule> thunk_schedule,
                       std::unique_ptr<const HloModule> hlo_module,
                       std::unique_ptr<const BufferAssignment> assignment,
                       std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
@@ -46,6 +48,8 @@ namespace npu {
                              HloExecutionProfile* hlo_execution_profile);
 
         const PointsToSet& GetRootPointsToSet() const;
+
+        const std::unique_ptr<xla::cpu::SimpleOrcJIT> jit_;
 
         const std::unique_ptr<const NpuThunkSchedule> thunk_schedule_;
 

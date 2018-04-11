@@ -100,13 +100,15 @@ namespace npu {
 
     using namespace xla;
 
-    NpuExecutable::NpuExecutable(std::unique_ptr<const NpuThunkSchedule> thunk_schedule,
+    NpuExecutable::NpuExecutable(std::unique_ptr<xla::cpu::SimpleOrcJIT> jit,
+                                 std::unique_ptr<const NpuThunkSchedule> thunk_schedule,
                                  std::unique_ptr<const HloModule> hlo_module,
                                  std::unique_ptr<const BufferAssignment> assignment,
                                  std::unique_ptr<HloProfilePrinterData> hlo_profile_printer_data,
                                  std::unique_ptr<HloProfileIndexMap> hlo_profile_index_map)
     : Executable(std::move(hlo_module), std::move(hlo_profile_printer_data),
                  std::move(hlo_profile_index_map)),
+      jit_(std::move(jit)),
       thunk_schedule_(std::move(thunk_schedule)),
       assignment_(std::move(assignment)) {
 

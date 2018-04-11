@@ -5,6 +5,11 @@
 #include <llvm/Support/raw_ostream.h>
 #include "llvm/IR/DiagnosticInfo.h"
 #include <llvm/IR/DiagnosticPrinter.h>
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
 #include "npu_compiler.h"
 #include "npu_executable.h"
 #include "npu_ir_emitter.h"
@@ -17,6 +22,10 @@
 #include "npu_thunk_schedule.h"
 #include "npu_hlo_schedule.h"
 
+#include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
+#include "tensorflow/compiler/xla/service/cpu/cpu_options.h"
+#include "tensorflow/compiler/xla/service/llvm_ir/llvm_util.h"
+
 namespace se = ::perftools::gputools;
 
 namespace npu {
@@ -26,11 +35,45 @@ namespace npu {
     /* static */ const char *NpuCompiler::kDataLayout =
             "e-i64:64-i128:128-v16:16-v32:32-n16:32:64";
 
+    llvm::TargetOptions CompilerTargetOptions(
+            const HloModuleConfig& module_config) {
+        llvm::TargetOptions target_options;
+        llvm_ir::SetTargetOptions(
+                /*fast_math_enabled=*/module_config.debug_options()
+                                              .xla_enable_fast_math(),
+                                      &target_options);
+        return target_options;
+    }
+
+    llvm::CodeGenOpt::Level CodeGenOptLevel(const HloModuleConfig& module_config) {
+        VLOG(2) << "backend_optimization_level: "
+                << module_config.debug_options().xla_backend_optimization_level();
+        switch (module_config.debug_options().xla_backend_optimization_level()) {
+            case 1:
+                return llvm::CodeGenOpt::Less;
+            case 2:
+                return llvm::CodeGenOpt::Default;
+            case 3:
+                return llvm::CodeGenOpt::Aggressive;
+            default:
+                return llvm::CodeGenOpt::None;
+        }
+    }
+
     using namespace xla;
 
     NpuCompiler::NpuCompiler()
             : pointer_size_(llvm::DataLayout(kDataLayout)
-                                    .getPointerSize(0 /* default address space */)) {}
+                                    .getPointerSize(0 /* default address space */)) {
+        // Initialize LLVM the first time the CpuCompiler is initialized.
+        static bool llvm_initialized = []() {
+            // Initialize LLVM's MC layer for the native target.
+            llvm::InitializeNativeTarget();
+            llvm::InitializeNativeTargetAsmPrinter();
+            return true;
+        }();
+        (void)llvm_initialized;
+    }
 
     StatusOr<std::unique_ptr<HloModule>> NpuCompiler::RunHloPasses(
             std::unique_ptr<HloModule> module, se::StreamExecutor* stream_exec,
@@ -57,10 +100,24 @@ namespace npu {
         };
         llvm_context.setDiagnosticHandlerCallBack(DiagnosticHandler, &printer);
 
-        llvm::Module llvm_module(module->name().c_str(), llvm_context);
+        auto llvm_module =
+                xla::MakeUnique<llvm::Module>(module->name().c_str(), llvm_context);
+
         // Set the target triple and the data layout.
         //llvm_module.setTargetTriple(kTargetTriple);
-        llvm_module.setDataLayout(kDataLayout);
+        //llvm_module.setDataLayout(kDataLayout);
+
+        auto jit = xla::MakeUnique<xla::cpu::SimpleOrcJIT>(
+                CompilerTargetOptions(module->config()),
+                CodeGenOptLevel(module->config()),
+                xla::cpu::options::OptimizeForSizeRequested(module->config()),
+                module->config().debug_options().xla_enable_fast_math(),
+                module->config().debug_options().xla_llvm_disable_expensive_passes(),
+                nullptr, nullptr);
+
+
+        llvm_module->setDataLayout(jit->data_layout());
+        llvm_module->setTargetTriple(jit->target_triple().getTriple());
 
         // Determine the HLO schedule, which is an ordering of HLO instructions.  This
         // is used by buffer assignment to enable buffer reuse, and the same ordering
@@ -89,7 +146,7 @@ namespace npu {
 
         IrEmitterContext ir_emitter_context(module.get(), buffer_assignment.get(),
                                             &stream_exec->GetDeviceDescription(),
-                                            &llvm_module);
+                                            llvm_module.get());
 
         HloComputation* entry_computation = module->entry_computation();
         IrEmitter ir_emitter(module->config(), entry_computation,
@@ -109,7 +166,9 @@ namespace npu {
         std::unique_ptr<HloProfileIndexMap> profile_index_map;
         std::unique_ptr<HloProfilePrinterData> profile_printer;
 
+        jit->AddModule(std::move(llvm_module));
         auto* npu_executable = new NpuExecutable(
+                std::move(jit),
                 std::move(thunk_schedule),
                 std::move(module), std::move(buffer_assignment),
                 std::move(profile_printer), std::move(profile_index_map));
