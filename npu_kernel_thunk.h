@@ -18,6 +18,7 @@
 #include "tensorflow/core/platform/mutex.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 #include "tensorflow/core/platform/thread_annotations.h"
+#include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
 
 namespace npu {
 
@@ -29,7 +30,9 @@ namespace npu {
         //
         // `hlo_instruction` is as in Thunk. Other arguments are as the class members.
         NpuKernelThunk(tensorflow::gtl::ArraySlice<const BufferAllocation *> args,
-                    const string &kernel_name, const HloInstruction *hlo_instruction);
+                       const string &kernel_name,
+                       const HloInstruction *hlo_instruction,
+                       xla::cpu::SimpleOrcJIT* jit);
 
         NpuKernelThunk(const NpuKernelThunk &) = delete;
 
@@ -61,6 +64,8 @@ namespace npu {
         std::unordered_map<perftools::gputools::StreamExecutor *,
                 perftools::gputools::KernelBase>
                 kernel_cache_ GUARDED_BY(mutex_);
+
+        xla::cpu::SimpleOrcJIT* jit_;
     };
 
 }  // namespace npu

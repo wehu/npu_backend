@@ -146,7 +146,8 @@ namespace npu {
 
         IrEmitterContext ir_emitter_context(module.get(), buffer_assignment.get(),
                                             &stream_exec->GetDeviceDescription(),
-                                            llvm_module.get());
+                                            llvm_module.get(),
+                                            jit.get());
 
         HloComputation* entry_computation = module->entry_computation();
         IrEmitter ir_emitter(module->config(), entry_computation,

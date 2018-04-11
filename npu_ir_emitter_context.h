@@ -5,7 +5,7 @@
 #include "tensorflow/compiler/xla/service/buffer_assignment.h"
 #include "tensorflow/compiler/xla/service/name_uniquer.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
-
+#include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
 
 namespace npu {
 
@@ -16,11 +16,13 @@ namespace npu {
         IrEmitterContext(const HloModule* hlo_module,
                          const BufferAssignment* buffer_assignment,
                          const perftools::gputools::DeviceDescription* device_desc,
-                         llvm::Module* llvm_module)
+                         llvm::Module* llvm_module,
+                         xla::cpu::SimpleOrcJIT* jit)
                 : hlo_module_(hlo_module),
                   buffer_assignment_(buffer_assignment),
                   device_desc_(device_desc),
-                  llvm_module_(llvm_module) {}
+                  llvm_module_(llvm_module),
+                  jit_(jit) {}
         // Disallow copy and assign.
         IrEmitterContext(const IrEmitterContext&) = delete;
         IrEmitterContext& operator=(const IrEmitterContext&) = delete;
@@ -35,6 +37,8 @@ namespace npu {
 
         llvm::Module* llvm_module() { return llvm_module_; }
 
+        xla::cpu::SimpleOrcJIT* jit() { return jit_; }
+
         NameUniquer* name_uniquer() { return &name_uniquer_; }
 
     private:
@@ -42,6 +46,7 @@ namespace npu {
         const BufferAssignment* buffer_assignment_;
         const perftools::gputools::DeviceDescription* device_desc_;
         llvm::Module* llvm_module_;
+        xla::cpu::SimpleOrcJIT* jit_;
         NameUniquer name_uniquer_;
     };
 

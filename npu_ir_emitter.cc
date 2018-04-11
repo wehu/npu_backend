@@ -588,7 +588,7 @@ namespace npu {
         }
 
         return MakeUnique<NpuKernelThunk>(buffers, llvm_ir::AsString(kernel->getName()),
-                                       inst);
+                                       inst, ir_emitter_context_->jit());
     }
 
 }  // namespace npu
