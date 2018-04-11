@@ -26,6 +26,7 @@
 
 #include "npu_ir_emitter_context.h"
 #include "npu_thunk.h"
+#include "npu_kernel_thunk.h"
 #include "npu_hlo_to_ir_bindings.h"
 
 namespace npu {
@@ -85,7 +86,7 @@ namespace npu {
         // `LastThunk()`.
         Status EmitTargetElementLoopInThunk(
                 const HloInstruction& hlo, const llvm_ir::ElementGenerator& body_emitter,
-                NpuThunk* thunk);
+                NpuKernelThunk* thunk);
 
     protected:
 
@@ -105,7 +106,11 @@ namespace npu {
                     .ConsumeValueOrDie();
         }
 
-        std::unique_ptr<NpuThunk> BuildKernelThunk(const HloInstruction* inst);
+        llvm::Function* BuildKernelPrototype(
+                const HloInstruction& inst,
+                tensorflow::gtl::ArraySlice<const BufferAllocation*> args);
+
+        std::unique_ptr<NpuKernelThunk> BuildKernelThunk(const HloInstruction* inst);
 
         NpuThunk* LastThunk() const { return thunk_sequence_->back().get(); }
 
