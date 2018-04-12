@@ -36,10 +36,6 @@ namespace xla {
                            const HloInstruction *hlo_instruction,
                            xla::cpu::SimpleOrcJIT *jit);
 
-            NpuKernelThunk(const NpuKernelThunk &) = delete;
-
-            NpuKernelThunk &operator=(const NpuKernelThunk &) = delete;
-
             ~NpuKernelThunk() override = default;
 
             const string &kernel_name() const { return kernel_name_; }
@@ -68,6 +64,8 @@ namespace xla {
                     kernel_cache_ GUARDED_BY(mutex_);
 
             xla::cpu::SimpleOrcJIT *jit_;
+
+            SE_DISALLOW_COPY_AND_ASSIGN(NpuKernelThunk);
         };
 
     }  // namespace npu

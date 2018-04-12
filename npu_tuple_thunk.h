@@ -29,10 +29,6 @@ namespace xla {
                                              tuple_element_buffers.end()),
                       dest_buffer_(dest_buffer) {}
 
-            NpuTupleThunk(const NpuTupleThunk &) = delete;
-
-            NpuTupleThunk &operator=(const NpuTupleThunk &) = delete;
-
             tensorflow::Status ExecuteOnStream(
                     const NpuBufferAllocations &buffer_allocations,
                     perftools::gputools::Stream *stream) override;
@@ -40,6 +36,8 @@ namespace xla {
         private:
             const std::vector<BufferAllocation::Slice> tuple_element_buffers_;
             const BufferAllocation::Slice dest_buffer_;
+
+            SE_DISALLOW_COPY_AND_ASSIGN(NpuTupleThunk);
         };
 
     }  // namespace npu
