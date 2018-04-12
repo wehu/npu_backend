@@ -28,6 +28,13 @@ namespace xla {
         Status XlaNpuDeviceFactory::CreateDevices(const SessionOptions &options,
                                                   const string &name_prefix,
                                                   std::vector<Device *> *devices) {
+
+            XlaOpRegistry::DeviceRegistration registration;
+            registration.compilation_device_name = DEVICE_NPU_XLA_JIT;
+            registration.requires_compilation = true;
+            registration.enable_jit_by_default = false;
+            registration.compile_resource_ops = true;
+
             static XlaDeviceOpRegistrations *registrations =
                     RegisterXlaDeviceKernels(DEVICE_XLA_NPU, DEVICE_NPU_XLA_JIT);
             (void) registrations;
@@ -35,7 +42,7 @@ namespace xla {
             std::unique_ptr<XlaDevice> device;
             Status status = XlaDevice::Create("NPU", DEVICE_XLA_NPU, 0,
                                               DEVICE_NPU_XLA_JIT, options, name_prefix,
-                    /*register_device_for_compilation=*/true,
+                                              registration,
                     /*transfer_as_literal=*/false, &device);
             if (!status.ok()) {
                 // Treat failures as non-fatal; there might not be a GPU in the machine.
