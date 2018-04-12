@@ -27,6 +27,10 @@ namespace xla {
         using ComputeFunctionType4 = void (*)(char *, char *, char *, char *);
         using ComputeFunctionType5 = void (*)(char *, char *, char *, char *, char *);
         using ComputeFunctionType6 = void (*)(char *, char *, char *, char *, char *, char *);
+        using ComputeFunctionType7 = void (*)(char *, char *, char *, char *, char *, char *, char *);
+        using ComputeFunctionType8 = void (*)(char *, char *, char *, char *, char *, char *, char *, char *);
+        using ComputeFunctionType9 = void (*)(char *, char *, char *, char *, char *, char *, char *, char *, char *);
+        using ComputeFunctionType10 = void (*)(char *, char *, char *, char *, char *, char *, char *, char *, char *, char *);
 
         NpuKernelThunk::NpuKernelThunk(
                 tensorflow::gtl::ArraySlice<const BufferAllocation *> args,
@@ -113,6 +117,30 @@ namespace xla {
                                 auto compute_function =
                                         reinterpret_cast<ComputeFunctionType6>(sym_addr);
                                 compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5]);
+                                break;
+                            }
+                            case 7: {
+                                auto compute_function =
+                                        reinterpret_cast<ComputeFunctionType7>(sym_addr);
+                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5], addrs[6]);
+                                break;
+                            }
+                            case 8: {
+                                auto compute_function =
+                                        reinterpret_cast<ComputeFunctionType8>(sym_addr);
+                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5], addrs[6], addrs[7]);
+                                break;
+                            }
+                            case 9: {
+                                auto compute_function =
+                                        reinterpret_cast<ComputeFunctionType9>(sym_addr);
+                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5], addrs[6], addrs[7], addrs[8]);
+                                break;
+                            }
+                            case 10: {
+                                auto compute_function =
+                                        reinterpret_cast<ComputeFunctionType10>(sym_addr);
+                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5], addrs[6], addrs[7], addrs[8], addrs[9]);
                                 break;
                             }
                         }
