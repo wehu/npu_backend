@@ -49,16 +49,6 @@ namespace xla {
                   kernel_name_(kernel_name),
                   jit_(jit) {}
 
-        tensorflow::Status NpuKernelThunk::Initialize(const NpuExecutable &executable) {
-            tensorflow::mutex_lock lock(mutex_);
-            if (loader_spec_) {
-                // Already initialized by another thread.
-                return tensorflow::Status::OK();
-            }
-
-            return tensorflow::Status::OK();
-        }
-
         tensorflow::Status NpuKernelThunk::ExecuteOnStream(
                 const NpuBufferAllocations &buffer_allocations, se::Stream *stream) {
 

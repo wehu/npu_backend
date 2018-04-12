@@ -40,8 +40,6 @@ namespace xla {
 
             const string &kernel_name() const { return kernel_name_; }
 
-            tensorflow::Status Initialize(const NpuExecutable &executable) override;
-
             // Executes the kernel for the thunk on "stream", which must be non-null.
             tensorflow::Status ExecuteOnStream(
                     const NpuBufferAllocations &buffer_allocations,
@@ -53,15 +51,6 @@ namespace xla {
 
             // Entry kernel name for the computation.
             const string kernel_name_;
-
-            mutable tensorflow::mutex mutex_;
-            std::unique_ptr<perftools::gputools::MultiKernelLoaderSpec> loader_spec_
-            GUARDED_BY(mutex_);
-
-            // Loaded kernels for each `StreamExecutor`
-            std::unordered_map<perftools::gputools::StreamExecutor *,
-                    perftools::gputools::KernelBase>
-                    kernel_cache_ GUARDED_BY(mutex_);
 
             xla::cpu::SimpleOrcJIT *jit_;
 
