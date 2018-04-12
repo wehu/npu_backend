@@ -14,23 +14,31 @@
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Support/Error.h"
+#include "boost/preprocessor/repetition.hpp"
 
 namespace se = ::perftools::gputools;
+
+#define MAX_FUNC_PARAMS_SIZE 24
+
+#define PARAM_TYPE(z, n, t) t
+
+#define DECLARE_FUNC_TYPE(z, n, used) \
+  using ComputeFunctionType ## n  = void (*)(BOOST_PP_ENUM(n, PARAM_TYPE, char *));
+
+#define PARAM_REF(z, n, p) p[n]
+
+#define SWITCH_CASE(z, n, p) \
+  case n: { \
+    auto compute_function = \
+        reinterpret_cast<ComputeFunctionType ## n>(sym_addr); \
+    compute_function(BOOST_PP_ENUM(n, PARAM_REF, p)); \
+    break; \
+  }
 
 namespace xla {
     namespace npu {
 
-        using ComputeFunctionType0 = void (*)();
-        using ComputeFunctionType1 = void (*)(char *);
-        using ComputeFunctionType2 = void (*)(char *, char *);
-        using ComputeFunctionType3 = void (*)(char *, char *, char *);
-        using ComputeFunctionType4 = void (*)(char *, char *, char *, char *);
-        using ComputeFunctionType5 = void (*)(char *, char *, char *, char *, char *);
-        using ComputeFunctionType6 = void (*)(char *, char *, char *, char *, char *, char *);
-        using ComputeFunctionType7 = void (*)(char *, char *, char *, char *, char *, char *, char *);
-        using ComputeFunctionType8 = void (*)(char *, char *, char *, char *, char *, char *, char *, char *);
-        using ComputeFunctionType9 = void (*)(char *, char *, char *, char *, char *, char *, char *, char *, char *);
-        using ComputeFunctionType10 = void (*)(char *, char *, char *, char *, char *, char *, char *, char *, char *, char *);
+        BOOST_PP_REPEAT(MAX_FUNC_PARAMS_SIZE, DECLARE_FUNC_TYPE, ~)
 
         NpuKernelThunk::NpuKernelThunk(
                 tensorflow::gtl::ArraySlice<const BufferAllocation *> args,
@@ -56,16 +64,20 @@ namespace xla {
 
             VLOG(3) << "Launching " << kernel_name_;
 
-            std::vector<char *> addrs;
+            if (args_.size() > MAX_FUNC_PARAMS_SIZE) {
+                return Unimplemented("kernel parameters size is too big on NPU.");
+            }
+
+            std::vector<char *> params;
             for (const BufferAllocation *arg : args_) {
                 const auto &buf = buffer_allocations.GetDeviceAddress(arg->index());
-                addrs.push_back((char *) buf.opaque());
+                params.push_back((char *) buf.opaque());
                 VLOG(3) << "  Arg: alloc #" << arg->index() << ": " << buf.opaque() << " ("
                         << buf.size() << "B)";
             }
 
             llvm::JITSymbol sym = jit_->FindCompiledSymbol(kernel_name_);
-            // We expect to find the symbol provided with entry_function_name; otherwise
+            // We expect to find the symbol provided with kernel_name_; otherwise
             // this is an internal error.
             CHECK(sym) << "Symbol " << kernel_name_ << " not found.";
             // getAddress can do work under the hood in the jit, so it needs to be
@@ -74,75 +86,10 @@ namespace xla {
             auto sym_addr = llvm::cantFail(sym.getAddress());
 
             AsNpuStream(stream)->EnqueueTask(
-                    [addrs, sym_addr]() {
+                    [params, sym_addr]() {
 
-                        switch (addrs.size()) {
-                            case 0: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType0>(sym_addr);
-                                compute_function();
-                                break;
-                            }
-                            case 1: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType1>(sym_addr);
-                                compute_function(addrs[0]);
-                                break;
-                            }
-                            case 2: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType2>(sym_addr);
-                                compute_function(addrs[0], addrs[1]);
-                                break;
-                            }
-                            case 3: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType3>(sym_addr);
-                                compute_function(addrs[0], addrs[1], addrs[2]);
-                                break;
-                            }
-                            case 4: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType4>(sym_addr);
-                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3]);
-                                break;
-                            }
-                            case 5: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType5>(sym_addr);
-                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4]);
-                                break;
-                            }
-                            case 6: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType6>(sym_addr);
-                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5]);
-                                break;
-                            }
-                            case 7: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType7>(sym_addr);
-                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5], addrs[6]);
-                                break;
-                            }
-                            case 8: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType8>(sym_addr);
-                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5], addrs[6], addrs[7]);
-                                break;
-                            }
-                            case 9: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType9>(sym_addr);
-                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5], addrs[6], addrs[7], addrs[8]);
-                                break;
-                            }
-                            case 10: {
-                                auto compute_function =
-                                        reinterpret_cast<ComputeFunctionType10>(sym_addr);
-                                compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5], addrs[6], addrs[7], addrs[8], addrs[9]);
-                                break;
-                            }
+                        switch (params.size()) {
+                            BOOST_PP_REPEAT(MAX_FUNC_PARAMS_SIZE, SWITCH_CASE, params)
                         }
                     });
 

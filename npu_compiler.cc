@@ -116,7 +116,6 @@ namespace xla {
                     module->config().debug_options().xla_llvm_disable_expensive_passes(),
                     nullptr, nullptr);
 
-
             llvm_module->setDataLayout(jit->data_layout());
             llvm_module->setTargetTriple(jit->target_triple().getTriple());
 

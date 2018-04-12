@@ -79,6 +79,7 @@ cc_library(
         "//tensorflow/compiler/xla/service/cpu:simple_orc_jit",
         "//tensorflow/core:lib",
         "//tensorflow/core:stream_executor_no_cuda",
+        "@boost//:preprocessor",
     ],
 )
 

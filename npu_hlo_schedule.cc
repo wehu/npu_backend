@@ -18,8 +18,8 @@ namespace xla {
 
         namespace {
 
-// An HLO partial ordering based on the actual stream assignment and thunk
-// launch order.
+            // An HLO partial ordering based on the actual stream assignment and thunk
+            // launch order.
             class NpuHloOrdering : public PredecessorHloOrdering {
             public:
                 NpuHloOrdering(const HloModule *module,
@@ -117,25 +117,25 @@ namespace xla {
                 }
             }
 
-// Computes a topological launch_order that is close to a breadth-first
-// order. This heuristic works well for graphs where concurrent kernels are
-// located at the same layer. It can often reduce dependency between concurrent
-// GEMMs due to intra-stream total orders.  E.g. consider the following HLO
-// graph where the numbers in the parens indicate the stream assigned to each
-// HLO.
-//
-//   A(0) -> D(0) -> E(1)
-//    |
-//    v
-//   B(0)
-//    |
-//    v
-//   C(0)
-//
-// If the total order is A,B,C,D,E, then C and E would be sequentialized
-// because C completes before D starts in stream 0, and E depends on D.
-// However, if the total order is A,B,D,C,E, then C and E can run
-// concurrently.
+            // Computes a topological launch_order that is close to a breadth-first
+            // order. This heuristic works well for graphs where concurrent kernels are
+            // located at the same layer. It can often reduce dependency between concurrent
+            // GEMMs due to intra-stream total orders.  E.g. consider the following HLO
+            // graph where the numbers in the parens indicate the stream assigned to each
+            // HLO.
+            //
+            //   A(0) -> D(0) -> E(1)
+            //    |
+            //    v
+            //   B(0)
+            //    |
+            //    v
+            //   C(0)
+            //
+            // If the total order is A,B,C,D,E, then C and E would be sequentialized
+            // because C completes before D starts in stream 0, and E depends on D.
+            // However, if the total order is A,B,D,C,E, then C and E can run
+            // concurrently.
             void BFSLaunchOrder(const HloComputation *computation,
                                 std::vector<const HloInstruction *> *launch_order) {
                 // This topological sort uses two data structures:
