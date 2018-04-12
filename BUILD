@@ -41,17 +41,23 @@ cc_library(
 cc_library(
     name = "npu_executable",
     srcs = [
+        "npu_conditional_thunk.cc",
         "npu_executable.cc",
         "npu_kernel_thunk.cc",
+        "npu_sequential_thunk.cc",
         "npu_thunk_schedule.cc",
         "npu_tuple_thunk.cc",
+        "npu_while_thunk.cc",
     ],
     hdrs = [
+        "npu_conditional_thunk.h",
         "npu_executable.h",
         "npu_kernel_thunk.h",
+        "npu_sequential_thunk.h",
         "npu_thunk.h",
         "npu_thunk_schedule.h",
         "npu_tuple_thunk.h",
+        "npu_while_thunk.h",
     ],
     deps = [
         ":npu_buffer_allocations",

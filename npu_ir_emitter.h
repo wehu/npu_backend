@@ -143,6 +143,10 @@ namespace xla {
                     tensorflow::gtl::ArraySlice<const BufferAllocation *> args);
 
             std::unique_ptr<NpuKernelThunk> BuildKernelThunk(const HloInstruction *inst);
+            std::unique_ptr<NpuThunk> BuildConditionalThunk(const HloInstruction* hlo);
+            std::unique_ptr<NpuThunk> BuildWhileThunk(const HloInstruction* hlo);
+            //std::unique_ptr<NpuThunk> BuildForThunk(const HloInstruction* hlo,
+            //                                     const int64 loop_limit);
 
             NpuThunk *LastThunk() const { return thunk_sequence_->back().get(); }
 

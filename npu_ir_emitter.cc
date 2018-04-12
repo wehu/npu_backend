@@ -1,5 +1,7 @@
 #include "npu_ir_emitter.h"
 #include "npu_tuple_thunk.h"
+#include "npu_conditional_thunk.h"
+#include "npu_while_thunk.h"
 #include "npu_constants.h"
 
 #include <string>
@@ -248,7 +250,26 @@ namespace xla {
         }
 
         Status NpuIrEmitter::HandleWhile(HloInstruction *xla_while) {
-            return Unimplemented("While is not implement on NPU");
+            HloComputation* condition = xla_while->while_condition();
+            TF_RET_CHECK(ShapeUtil::IsScalar(condition->root_instruction()->shape()) &&
+                         condition->root_instruction()->shape().element_type() == PRED)
+                        << "While condition computation must return bool";
+            // Build ForThunk for conformant while loops, otherwise build WhileThunk.
+            //auto result = CanTransformWhileToFor(xla_while);
+            //if (result.ok()) {
+            //    auto tuple = result.ConsumeValueOrDie();
+            //    // loop_trip_count = (limit - start + increment - 1) / increment
+            //    const int64 loop_trip_count =
+            //            (std::get<1>(tuple) - std::get<0>(tuple) + std::get<2>(tuple) - 1) /
+            //            std::get<2>(tuple);
+            //    thunk_sequence_->emplace_back(BuildForThunk(xla_while, loop_trip_count));
+            //    VLOG(3) << "Built ForThunk for while: " << xla_while->name();
+            //} else {
+                thunk_sequence_->emplace_back(BuildWhileThunk(xla_while));
+                VLOG(3) << "Built WhileThunk for while: " << xla_while->name();
+            //            << " while-to-for transform status: " << result.status();
+            //}
+            return Status::OK();
         }
 
         Status NpuIrEmitter::HandleGather(HloInstruction *gather) {
@@ -259,8 +280,9 @@ namespace xla {
             return Unimplemented("Copy is not implement on NPU");
         }
 
-        Status NpuIrEmitter::HandleConditional(HloInstruction *copy) {
-            return Unimplemented("Conditional is not implement on NPU");
+        Status NpuIrEmitter::HandleConditional(HloInstruction *conditional) {
+            thunk_sequence_->emplace_back(BuildConditionalThunk(conditional));
+            return Status::OK();
         }
 
         Status NpuIrEmitter::HandleBatchNormInference(HloInstruction *) {
@@ -577,6 +599,146 @@ namespace xla {
 
             return MakeUnique<NpuKernelThunk>(buffers, llvm_ir::AsString(kernel->getName()),
                                               inst, ir_emitter_context_->jit());
+        }
+
+        namespace {
+
+            // Checks that the buffers corresponding to the given two HLOs share the same
+            // allocation.
+            Status CheckHloBuffersShareAllocation(
+                    const HloInstruction *a, const HloInstruction *b, const ShapeIndex &index,
+                    const BufferAssignment &buffer_assignment) {
+                const BufferAllocation::Slice slice_a =
+                        buffer_assignment.GetUniqueSlice(a, index).ConsumeValueOrDie();
+                const BufferAllocation::Slice slice_b =
+                        buffer_assignment.GetUniqueSlice(b, index).ConsumeValueOrDie();
+                if (slice_a != slice_b) {
+                    return InternalError(
+                            "instruction %s %s does not share allocation with instruction %s %s",
+                            a->ToString().c_str(), slice_a.ToString().c_str(),
+                            b->ToString().c_str(), slice_b.ToString().c_str());
+                }
+                return Status::OK();
+            }
+
+
+            // Checks that the buffers used in a conditional instruction are shared with the
+            // operands and result as follows:
+            //   * The result buffer of the conditional should share the allocation with the
+            //     result buffers of the true and false computations.
+            //   * The buffer of operand 1 should share the allocation with the buffer of
+            //     the parameter 0 instruction of the true computation.
+            //   * The buffer of operand 2 should share the allocation with the buffer of
+            //     the parameter 0 instruction of the false computation.
+            Status CheckConditionalBuffersShareAllocation(
+                    const HloInstruction *conditional,
+                    const BufferAssignment &buffer_assignment) {
+                TF_RETURN_IF_ERROR(ShapeUtil::ForEachSubshapeWithStatus(
+                        conditional->shape(),
+                        [&](const Shape & /*subshape*/, const ShapeIndex &index) -> Status {
+                            TF_RETURN_IF_ERROR(CheckHloBuffersShareAllocation(
+                                    conditional, conditional->true_computation()->root_instruction(),
+                                    index, buffer_assignment));
+                            TF_RETURN_IF_ERROR(CheckHloBuffersShareAllocation(
+                                    conditional, conditional->false_computation()->root_instruction(),
+                                    index, buffer_assignment));
+                            return Status::OK();
+                        }));
+                TF_RETURN_IF_ERROR(ShapeUtil::ForEachSubshapeWithStatus(
+                        conditional->operand(1)->shape(),
+                        [&](const Shape & /*subshape*/, const ShapeIndex &index) -> Status {
+                            return CheckHloBuffersShareAllocation(
+                                    conditional->operand(1),
+                                    conditional->true_computation()->parameter_instruction(0), index,
+                                    buffer_assignment);
+                        }));
+                TF_RETURN_IF_ERROR(ShapeUtil::ForEachSubshapeWithStatus(
+                        conditional->operand(2)->shape(),
+                        [&](const Shape & /*subshape*/, const ShapeIndex &index) -> Status {
+                            return CheckHloBuffersShareAllocation(
+                                    conditional->operand(2),
+                                    conditional->false_computation()->parameter_instruction(0), index,
+                                    buffer_assignment);
+                        }));
+                return Status::OK();
+            }
+
+            // Checks that all buffers used during while loop iteration share the same
+            // buffer allocation. This includes buffers for while result, while init
+            // operand, condition parameter, body parameter and body result.
+            // Returns OK on success, error status otherwise.
+            Status CheckWhileBuffersShareAllocation(
+                    const HloInstruction* xla_while,
+                    const BufferAssignment& buffer_assignment) {
+                return ShapeUtil::ForEachSubshapeWithStatus(
+                        xla_while->shape(),
+                        [&](const Shape& /*subshape*/, const ShapeIndex& index) -> Status {
+                            const HloInstruction* condition_parameter =
+                                    xla_while->while_condition()->parameter_instruction(0);
+                            const HloComputation* body = xla_while->while_body();
+                            const HloInstruction* body_parameter = body->parameter_instruction(0);
+                            const HloInstruction* body_result = body->root_instruction();
+                            TF_RETURN_IF_ERROR(CheckHloBuffersShareAllocation(
+                                    xla_while, xla_while->operand(0), index, buffer_assignment));
+                            TF_RETURN_IF_ERROR(CheckHloBuffersShareAllocation(
+                                    xla_while, condition_parameter, index, buffer_assignment));
+                            TF_RETURN_IF_ERROR(CheckHloBuffersShareAllocation(
+                                    xla_while, body_parameter, index, buffer_assignment));
+                            TF_RETURN_IF_ERROR(CheckHloBuffersShareAllocation(
+                                    xla_while, body_result, index, buffer_assignment));
+                            return Status::OK();
+                        });
+            }
+
+        }
+
+        std::unique_ptr<NpuThunk> NpuIrEmitter::BuildConditionalThunk(
+                const HloInstruction* hlo) {
+            // Check that the buffers used in conditional are shared with the operands and
+            // result appropriately.
+            TF_CHECK_OK(CheckConditionalBuffersShareAllocation(
+                    hlo, ir_emitter_context_->buffer_assignment()));
+
+            HloComputation* true_computation = hlo->true_computation();
+            NpuIrEmitter ir_emitter_true(hlo_module_config_, true_computation,
+                                              ir_emitter_context_);
+            TF_CHECK_OK(true_computation->root_instruction()->Accept(&ir_emitter_true));
+
+            HloComputation* false_computation = hlo->false_computation();
+            NpuIrEmitter ir_emitter_false(hlo_module_config_, false_computation,
+                                               ir_emitter_context_);
+            TF_CHECK_OK(false_computation->root_instruction()->Accept(&ir_emitter_false));
+
+            return MakeUnique<NpuConditionalThunk>(
+                    GetAllocationSlice(*hlo->operand(0)),
+                    GetAllocationSlice(*hlo->operand(1)),
+                    GetAllocationSlice(*hlo->operand(2)),
+                    std::move(*ir_emitter_true.ConsumeThunkSequence()),
+                    std::move(*ir_emitter_false.ConsumeThunkSequence()), hlo);
+        }
+
+        std::unique_ptr<NpuThunk> NpuIrEmitter::BuildWhileThunk(
+                const HloInstruction* hlo) {
+            // Check that all while-related buffers share an allocation.
+            TF_CHECK_OK(CheckWhileBuffersShareAllocation(
+                    hlo, ir_emitter_context_->buffer_assignment()));
+
+            // Generate thunk sequence for while 'condition'.
+            HloComputation* condition = hlo->while_condition();
+            NpuIrEmitter ir_emitter_condition(hlo_module_config_, condition,
+                                                   ir_emitter_context_);
+            TF_CHECK_OK(condition->root_instruction()->Accept(&ir_emitter_condition));
+
+            // Generate thunk sequence for while 'body'.
+            HloComputation* body = hlo->while_body();
+            NpuIrEmitter ir_emitter_body(hlo_module_config_, body,
+                                              ir_emitter_context_);
+            TF_CHECK_OK(body->root_instruction()->Accept(&ir_emitter_body));
+
+            return MakeUnique<NpuWhileThunk>(
+                    GetAllocationSlice(*condition->root_instruction()),  // cond result
+                    ir_emitter_condition.ConsumeThunkSequence(),
+                    ir_emitter_body.ConsumeThunkSequence(), hlo);
         }
 
     }  // namespace npu
