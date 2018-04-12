@@ -136,7 +136,7 @@ namespace xla {
 
                 return Status::OK();
             }
-            //thunk_sequence_->emplace_back(BuildKernelThunk(tuple));
+            thunk_sequence_->emplace_back(BuildKernelThunk(tuple));
             std::vector<llvm::Value *> base_ptrs;
             for (const HloInstruction *operand : tuple->operands()) {
                 base_ptrs.push_back(GetBasePointer(*operand));
@@ -453,7 +453,7 @@ namespace xla {
 
             // Adds entries for all subshapes of instr to `slices`.
             auto add_slices_for = [&](const HloInstruction *instr) {
-                // GPU constants don't have buffers; don't bother looking for one.
+                // NPU constants don't have buffers; don't bother looking for one.
                 if (instr->IsConstant()) {
                     return;
                 }

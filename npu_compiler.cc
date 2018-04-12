@@ -25,6 +25,32 @@
 #include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
 #include "tensorflow/compiler/xla/service/cpu/cpu_options.h"
 #include "tensorflow/compiler/xla/service/llvm_ir/llvm_util.h"
+#include "tensorflow/compiler/xla/service/algebraic_simplifier.h"
+#include "tensorflow/compiler/xla/service/batchnorm_expander.h"
+#include "tensorflow/compiler/xla/service/buffer_assignment.h"
+#include "tensorflow/compiler/xla/service/buffer_liveness.h"
+#include "tensorflow/compiler/xla/service/call_inliner.h"
+#include "tensorflow/compiler/xla/service/conditional_simplifier.h"
+#include "tensorflow/compiler/xla/service/dot_decomposer.h"
+#include "tensorflow/compiler/xla/service/flatten_call_graph.h"
+#include "tensorflow/compiler/xla/service/gather_expander.h"
+#include "tensorflow/compiler/xla/service/hlo_computation.h"
+#include "tensorflow/compiler/xla/service/hlo_constant_folding.h"
+#include "tensorflow/compiler/xla/service/hlo_cse.h"
+#include "tensorflow/compiler/xla/service/hlo_dce.h"
+#include "tensorflow/compiler/xla/service/hlo_element_type_converter.h"
+#include "tensorflow/compiler/xla/service/hlo_instruction.h"
+#include "tensorflow/compiler/xla/service/hlo_pass_fix.h"
+#include "tensorflow/compiler/xla/service/hlo_pass_pipeline.h"
+#include "tensorflow/compiler/xla/service/hlo_proto_util.h"
+#include "tensorflow/compiler/xla/service/hlo_subcomputation_unification.h"
+#include "tensorflow/compiler/xla/service/hlo_verifier.h"
+#include "tensorflow/compiler/xla/service/reduce_precision_insertion.h"
+#include "tensorflow/compiler/xla/service/reshape_mover.h"
+#include "tensorflow/compiler/xla/service/transpose_folding.h"
+#include "tensorflow/compiler/xla/service/tuple_simplifier.h"
+#include "tensorflow/compiler/xla/service/while_loop_simplifier.h"
+#include "tensorflow/compiler/xla/service/zero_sized_hlo_elimination.h"
 
 namespace se = ::perftools::gputools;
 
@@ -80,6 +106,100 @@ namespace xla {
                 std::unique_ptr<HloModule> module, se::StreamExecutor *stream_exec,
                 DeviceMemoryAllocator *device_allocator) {
             XLA_SCOPED_LOGGING_TIMER("NpuCompiler::RunHloPasses");
+            {
+                HloPassPipeline pipeline("optimization");
+                pipeline.AddInvariantChecker<HloVerifier>();
+                ReducePrecisionInsertion::AddPasses(
+                        &pipeline, module->config().debug_options(),
+                        ReducePrecisionInsertion::PassTiming::BEFORE_OPTIMIZATION);
+
+                // TODO(b/64094172): make Call work on GPU instead of inlining.
+                pipeline.AddPass<CallInliner>();
+                // Convert BF16 operations to F32 operations so that the GPU backend can
+                // support BF16 operations without directly implementing a BF16 lowering for
+                // most ops.
+                pipeline.AddPass<HloElementTypeConverter>(BF16, F32);
+                pipeline.AddPass<DotDecomposer>();
+
+                {
+                    auto& pass =
+                            pipeline.AddPass<HloPassFix<HloPassPipeline>>("simplification");
+                    pass.AddInvariantChecker<HloVerifier>();
+
+                    pass.AddPass<BatchNormExpander>(
+                            /*rewrite_training_op=*/true,
+                            /*rewrite_inference_op=*/true,
+                            /*rewrite_grad_op=*/true,
+                            /*use_fusion=*/false);
+
+                    // Rewrite gather ops into smaller ones.
+                    pass.AddPass<GatherExpander>();
+
+                    // BatchNormExpander can create zero-sized ops, so zero-sized HLO
+                    // elimination has to come after that pass.
+                    pipeline.AddPass<ZeroSizedHloElimination>();
+
+                    pass.AddPass<AlgebraicSimplifier>(
+                            /*is_layout_sensitive=*/false,
+                                                    [](const Shape&, const Shape&) { return false; });
+                    pass.AddPass<TupleSimplifier>();
+                    pass.AddPass<WhileLoopSimplifier>();
+                    pass.AddPass<HloDCE>();
+                    pass.AddPass<ReshapeMover>();
+                    pass.AddPass<HloConstantFolding>();
+                    pass.AddPass<ConditionalSimplifier>();
+                }
+
+                pipeline.AddPass<HloCSE>(/*is_layout_sensitive=*/false);
+                pipeline.AddPass<HloDCE>();
+                TF_RETURN_IF_ERROR(pipeline.Run(module.get()).status());
+            }
+
+            {
+                // Convert convolutions into CustomCalls to cudnn, then canonicalize them
+                // (PadInsertion).
+                HloPassPipeline pipeline("conv_canonicalization");
+                pipeline.AddInvariantChecker<HloVerifier>();
+                // Clean up new_tuple described above.
+                pipeline.AddPass<TupleSimplifier>();
+                pipeline.AddPass<HloDCE>();
+
+                TF_RETURN_IF_ERROR(pipeline.Run(module.get()).status());
+            }
+
+            {
+                HloPassPipeline pipeline("layout_assignment");
+
+                // The LayoutAssignment pass may leave behind kCopy instructions which are
+                // duplicate or NOPs, so remove them with algebraic simplification and CSE.
+                pipeline.AddPass<HloPassFix<AlgebraicSimplifier>>(
+                        /*is_layout_sensitive=*/true,
+                        /*valid_bitcast_callback=*/[](const Shape&, const Shape&) {
+                            return true;
+                        });
+                pipeline.AddPass<HloCSE>(/*is_layout_sensitive=*/true);
+                TF_RETURN_IF_ERROR(pipeline.Run(module.get()).status());
+            }
+
+            {
+                HloPassFix<HloPassPipeline> fusion("fusion");
+                fusion.AddInvariantChecker<HloVerifier>();
+                TF_RETURN_IF_ERROR(fusion.Run(module.get()).status());
+
+                HloPassPipeline reduce_pipeline("reduce-precision");
+                reduce_pipeline.AddInvariantChecker<HloVerifier>();
+                ReducePrecisionInsertion::AddPasses(
+                        &reduce_pipeline, module->config().debug_options(),
+                        ReducePrecisionInsertion::PassTiming::AFTER_FUSION);
+                StatusOr<bool> reduce_result = reduce_pipeline.Run(module.get());
+                TF_RETURN_IF_ERROR(reduce_result.status());
+
+                if (reduce_result.ValueOrDie()) {
+                    // Do another fusion pass, with the expectation that we may be able to
+                    // fuse the new ReducePrecision operations.
+                    TF_RETURN_IF_ERROR(fusion.Run(module.get()).status());
+                }
+            }
             return std::move(module);
         }
 
