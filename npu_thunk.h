@@ -5,14 +5,14 @@
 #ifndef TENSORFLOW_NPU_THUNK_H
 #define TENSORFLOW_NPU_THUNK_H
 
+#include "npu_buffer_allocations.h"
+
 #include <memory>
 #include <vector>
 
 #include "tensorflow/compiler/xla/service/hlo_instruction.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
-
-#include "npu_buffer_allocations.h"
 
 namespace npu {
 

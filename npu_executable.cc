@@ -198,7 +198,7 @@ namespace npu {
         // TODO(b/30100571): we could potentially postpone deallocating the temp
         // buffers until a different computation is executed.
         if (block_host_until_done) {
-            
+
             Status block_status = main_stream->BlockHostUntilDone();
             if (!block_status.ok()) {
                 return InternalError(

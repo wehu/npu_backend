@@ -5,11 +5,11 @@
 #ifndef TENSORFLOW_NPU_EXECUTABLE_H
 #define TENSORFLOW_NPU_EXECUTABLE_H
 
-#include "tensorflow/compiler/xla/service/executable.h"
-#include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
-
 #include "npu_thunk_schedule.h"
 #include "npu_buffer_allocations.h"
+
+#include "tensorflow/compiler/xla/service/executable.h"
+#include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
 
 namespace npu {
 

@@ -1,8 +1,9 @@
 #ifndef TENSORFLOW_NPU_PLATFORM_H_
 #define TENSORFLOW_NPU_PLATFORM_H_
 
+#include "npu_platform_id.h"
+
 #include <memory>
-#include "tensorflow/stream_executor/platform/port.h"
 #include <vector>
 
 #include "tensorflow/stream_executor/executor_cache.h"
@@ -15,8 +16,6 @@
 #include "tensorflow/stream_executor/stream_executor_internal.h"
 #include "tensorflow/stream_executor/stream_executor_pimpl.h"
 #include "tensorflow/stream_executor/trace_listener.h"
-
-#include "npu_platform_id.h"
 
 namespace npu {
 

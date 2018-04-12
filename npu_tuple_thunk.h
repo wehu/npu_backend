@@ -5,11 +5,12 @@
 #ifndef TENSORFLOW_NPU_TUPLE_THUNK_H
 #define TENSORFLOW_NPU_TUPLE_THUNK_H
 
+#include "npu_executable.h"
+#include "npu_thunk.h"
+
 #include <vector>
 
 #include "tensorflow/compiler/xla/service/buffer_assignment.h"
-#include "npu_executable.h"
-#include "npu_thunk.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/gtl/array_slice.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"

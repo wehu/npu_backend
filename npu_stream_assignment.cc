@@ -2,7 +2,6 @@
 // Created by wehu on 18-4-10.
 //
 
-
 #include "npu_stream_assignment.h"
 
 #include "tensorflow/compiler/xla/map_util.h"

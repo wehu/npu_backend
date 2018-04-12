@@ -1,6 +1,7 @@
 #include "npu_timer.h"
 #include "npu_executor.h"
 #include "npu_stream.h"
+
 #include "tensorflow/stream_executor/lib/status.h"
 #include "tensorflow/stream_executor/stream.h"
 

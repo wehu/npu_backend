@@ -1,6 +1,8 @@
 #ifndef TENSORFLOW_NPU_TRANSFER_MANAGER_H_
 #define TENSORFLOW_NPU_TRANSFER_MANAGER_H_
 
+#include "npu_infeed_manager.h"
+
 #include <vector>
 
 #include "tensorflow/compiler/xla/service/generic_transfer_manager.h"
@@ -10,8 +12,6 @@
 #include "tensorflow/core/platform/macros.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 #include "tensorflow/core/platform/types.h"
-
-#include "npu_infeed_manager.h"
 
 namespace npu {
 

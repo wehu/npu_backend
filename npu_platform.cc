@@ -1,11 +1,11 @@
+#include "npu_platform.h"
+#include "npu_executor.h"
+
 #include "tensorflow/stream_executor/lib/error.h"
 #include "tensorflow/stream_executor/lib/initialize.h"
 #include "tensorflow/stream_executor/lib/ptr_util.h"
 #include "tensorflow/stream_executor/lib/status.h"
 #include "tensorflow/stream_executor/lib/stringprintf.h"
-
-#include "npu_platform.h"
-#include "npu_executor.h"
 
 namespace npu {
 

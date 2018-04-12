@@ -1,6 +1,11 @@
 #ifndef TENSORFLOW_NPU_IR_EMITTER_H_
 #define TENSORFLOW_NPU_IR_EMITTER_H_
 
+#include "npu_ir_emitter_context.h"
+#include "npu_thunk.h"
+#include "npu_kernel_thunk.h"
+#include "npu_hlo_to_ir_bindings.h"
+
 #include <functional>
 #include <map>
 #include <memory>
@@ -23,11 +28,6 @@
 #include "tensorflow/core/lib/core/stringpiece.h"
 #include "tensorflow/core/lib/gtl/array_slice.h"
 #include "tensorflow/core/platform/types.h"
-
-#include "npu_ir_emitter_context.h"
-#include "npu_thunk.h"
-#include "npu_kernel_thunk.h"
-#include "npu_hlo_to_ir_bindings.h"
 
 namespace npu {
 

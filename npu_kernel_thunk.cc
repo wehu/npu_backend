@@ -3,9 +3,10 @@
 //
 
 #include "npu_kernel_thunk.h"
+#include "npu_stream.h"
+#include "npu_executable.h"
 
 #include "tensorflow/compiler/xla/ptr_util.h"
-#include "npu_executable.h"
 #include "tensorflow/compiler/xla/types.h"
 #include "tensorflow/compiler/xla/util.h"
 #include "tensorflow/core/lib/core/stringpiece.h"
@@ -13,7 +14,6 @@
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Support/Error.h"
-#include "npu_stream.h"
 
 namespace se = ::perftools::gputools;
 
@@ -25,6 +25,7 @@ namespace npu {
     using ComputeFunctionType3 = void (*)(char*, char*, char*);
     using ComputeFunctionType4 = void (*)(char*, char*, char*, char*);
     using ComputeFunctionType5 = void (*)(char*, char*, char*, char*, char*);
+    using ComputeFunctionType6 = void (*)(char*, char*, char*, char*, char*, char*);
 
     NpuKernelThunk::NpuKernelThunk(
             tensorflow::gtl::ArraySlice<const BufferAllocation *> args,
@@ -105,6 +106,12 @@ namespace npu {
                             auto compute_function =
                                     reinterpret_cast<ComputeFunctionType5>(sym_addr);
                             compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4]);
+                            break;
+                        }
+                        case 6: {
+                            auto compute_function =
+                                    reinterpret_cast<ComputeFunctionType6>(sym_addr);
+                            compute_function(addrs[0], addrs[1], addrs[2], addrs[3], addrs[4], addrs[5]);
                             break;
                         }
                     }

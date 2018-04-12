@@ -3,6 +3,7 @@
 //
 
 #include "npu_buffer_allocations.h"
+#include "npu_constants.h"
 
 #include <utility>
 

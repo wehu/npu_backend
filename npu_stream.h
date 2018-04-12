@@ -1,12 +1,12 @@
 #ifndef TENSORFLOW_NPU_STREAM_H_
 #define TENSORFLOW_NPU_STREAM_H_
 
+#include "npu_executor.h"
+
 #include "tensorflow/stream_executor/platform/thread_annotations.h"
 #include "tensorflow/stream_executor/stream_executor_internal.h"
 #include "tensorflow/stream_executor/lib/threadpool.h"
 #include "tensorflow/stream_executor/stream_executor_internal.h"
-
-#include "npu_executor.h"
 
 namespace npu {
 

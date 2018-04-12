@@ -1,11 +1,12 @@
 #ifndef TENSORFLOW_NPU_TIMER_H_
 #define TENSORFLOW_NPU_TIMER_H_
 
+#include "npu_executor.h"
+#include "npu_stream.h"
+
 #include <chrono>
 
 #include "tensorflow/stream_executor/stream_executor_internal.h"
-#include "npu_executor.h"
-#include "npu_stream.h"
 
 namespace npu {
 

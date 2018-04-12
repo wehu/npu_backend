@@ -1,10 +1,11 @@
 #include "npu_ir_emitter.h"
+#include "npu_tuple_thunk.h"
+#include "npu_constants.h"
 
 #include <string>
 #include <unordered_map>
 #include <utility>
 
-#include "tensorflow/core/platform/logging.h"
 // IWYU pragma: no_include "llvm/IR/Intrinsics.gen.inc"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
@@ -26,8 +27,7 @@
 #include "tensorflow/compiler/xla/util.h"
 #include "tensorflow/compiler/xla/window_util.h"
 #include "tensorflow/core/lib/core/errors.h"
-
-#include "npu_tuple_thunk.h"
+#include "tensorflow/core/platform/logging.h"
 
 namespace npu {
 

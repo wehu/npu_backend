@@ -1,3 +1,5 @@
+#include "npu_platform_id.h"
+
 #include "tensorflow/compiler/jit/kernels/xla_launch_op.h"
 #include "tensorflow/compiler/jit/xla_device.h"
 #include "tensorflow/compiler/jit/xla_device_ops.h"
@@ -6,8 +8,6 @@
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/framework/kernel_def.pb.h"
 #include "tensorflow/compiler/xla/service/computation_placer.h"
-
-#include "npu_platform_id.h"
 
 namespace npu {
 

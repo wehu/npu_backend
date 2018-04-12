@@ -5,13 +5,14 @@
 #ifndef TENSORFLOW_NPU_THUNK_SCHEDULE_H
 #define TENSORFLOW_NPU_THUNK_SCHEDULE_H
 
+#include "npu_stream_assignment.h"
+#include "npu_thunk.h"
+
 #include <list>
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
-#include "npu_stream_assignment.h"
-#include "npu_thunk.h"
 #include "tensorflow/compiler/xla/service/hlo_instruction.h"
 #include "tensorflow/compiler/xla/types.h"
 

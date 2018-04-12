@@ -2,11 +2,11 @@
 // Created by wehu on 18-4-10.
 //
 
+#include "npu_hlo_schedule.h"
+
 #include <deque>
 #include <memory>
 #include <unordered_map>
-
-#include "npu_hlo_schedule.h"
 
 #include "tensorflow/compiler/xla/ptr_util.h"
 #include "tensorflow/compiler/xla/service/hlo_reachability.h"

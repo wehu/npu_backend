@@ -5,10 +5,11 @@
 #ifndef TENSORFLOW_NPU_HLO_SCHEDULE_H
 #define TENSORFLOW_NPU_HLO_SCHEDULE_H
 
+#include "npu_stream_assignment.h"
+
 #include <memory>
 #include <vector>
 
-#include "npu_stream_assignment.h"
 #include "tensorflow/compiler/xla/service/hlo_module.h"
 #include "tensorflow/compiler/xla/service/hlo_ordering.h"
 #include "tensorflow/compiler/xla/statusor.h"

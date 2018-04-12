@@ -1,10 +1,10 @@
 #ifndef TENSORFLOW_NPU_EVENT_H_
 #define TENSORFLOW_HPU_EVENT_H_
 
+#include "npu_stream.h"
+
 #include "tensorflow/stream_executor/event.h"
 #include "tensorflow/stream_executor/lib/status.h"
-
-#include "npu_stream.h"
 #include "tensorflow/core/lib/gtl/flatset.h"
 
 namespace npu {

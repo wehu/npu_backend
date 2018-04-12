@@ -5,20 +5,21 @@
 #ifndef TENSORFLOW_NPU_KERNEL_THUNK_H
 #define TENSORFLOW_NPU_KERNEL_THUNK_H
 
+#include "npu_buffer_allocations.h"
+#include "npu_thunk.h"
+
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "tensorflow/compiler/xla/service/buffer_assignment.h"
-#include "npu_buffer_allocations.h"
-#include "npu_thunk.h"
 #include "tensorflow/compiler/xla/service/hlo_instruction.h"
 #include "tensorflow/compiler/xla/types.h"
+#include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
 #include "tensorflow/core/lib/gtl/array_slice.h"
 #include "tensorflow/core/platform/mutex.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 #include "tensorflow/core/platform/thread_annotations.h"
-#include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
 
 namespace npu {
 

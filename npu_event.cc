@@ -1,4 +1,5 @@
 #include "npu_event.h"
+
 #include "tensorflow/stream_executor/lib/statusor.h"
 
 namespace npu {

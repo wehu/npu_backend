@@ -2,6 +2,16 @@
 // Created by wehu on 18-4-8.
 //
 
+#include "npu_compiler.h"
+#include "npu_executable.h"
+#include "npu_ir_emitter.h"
+#include "npu_ir_emitter_context.h"
+#include "npu_platform_id.h"
+#include "npu_stream_assignment.h"
+#include "npu_thunk_schedule.h"
+#include "npu_hlo_schedule.h"
+#include "npu_constants.h"
+
 #include <llvm/Support/raw_ostream.h>
 #include "llvm/IR/DiagnosticInfo.h"
 #include <llvm/IR/DiagnosticPrinter.h>
@@ -10,18 +20,8 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
-#include "npu_compiler.h"
-#include "npu_executable.h"
-#include "npu_ir_emitter.h"
-#include "npu_ir_emitter_context.h"
-#include "npu_platform_id.h"
-#include "tensorflow/core/platform/tracing.h"
 #include "llvm/IR/DataLayout.h"
-
-#include "npu_stream_assignment.h"
-#include "npu_thunk_schedule.h"
-#include "npu_hlo_schedule.h"
-
+#include "tensorflow/core/platform/tracing.h"
 #include "tensorflow/compiler/xla/service/cpu/simple_orc_jit.h"
 #include "tensorflow/compiler/xla/service/cpu/cpu_options.h"
 #include "tensorflow/compiler/xla/service/llvm_ir/llvm_util.h"
