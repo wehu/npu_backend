@@ -38,7 +38,7 @@ namespace xla {
         using tensorflow::gtl::optional;
         using tensorflow::strings::StrCat;
 
-        IrEmitter::IrEmitter(const HloModuleConfig &hlo_module_config,
+        NpuIrEmitter::NpuIrEmitter(const HloModuleConfig &hlo_module_config,
                              const HloComputation *hlo_computation,
                              IrEmitterContext *ir_emitter_context)
                 : ir_emitter_context_(ir_emitter_context),
@@ -56,7 +56,7 @@ namespace xla {
             thunk_sequence_.reset(new NpuThunkSequence());
         }
 
-        Status IrEmitter::DefaultAction(HloInstruction *hlo) {
+        Status NpuIrEmitter::DefaultAction(HloInstruction *hlo) {
             thunk_sequence_->emplace_back(BuildKernelThunk(hlo));
             ElementalIrEmitter::HloToElementGeneratorMap operand_to_generator;
             for (const HloInstruction *operand : hlo->operands()) {
@@ -70,7 +70,7 @@ namespace xla {
                             .MakeElementGenerator(hlo, operand_to_generator));
         }
 
-        Status IrEmitter::HandleConstant(HloInstruction *constant) {
+        Status NpuIrEmitter::HandleConstant(HloInstruction *constant) {
             const Literal &literal = constant->literal();
             llvm::Constant *initializer =
                     llvm_ir::ConvertLiteralToIrConstant(literal, module_);
@@ -87,7 +87,7 @@ namespace xla {
             return Status::OK();
         }
 
-        Status IrEmitter::HandleBitcast(HloInstruction *bitcast) {
+        Status NpuIrEmitter::HandleBitcast(HloInstruction *bitcast) {
             VLOG(2) << "HandleBitcast: " << bitcast->ToString();
             const HloInstruction *operand = bitcast->operand(0);
             if (bindings_.BoundToIrValue(*operand)) {
@@ -96,31 +96,31 @@ namespace xla {
             return Status::OK();
         }
 
-        Status IrEmitter::HandleGetTupleElement(HloInstruction *get_tuple_element) {
+        Status NpuIrEmitter::HandleGetTupleElement(HloInstruction *get_tuple_element) {
             return Status::OK();
         }
 
-        Status IrEmitter::HandleSort(HloInstruction *) {
+        Status NpuIrEmitter::HandleSort(HloInstruction *) {
             return Unimplemented("Sort is not implemented on NPU");
         }
 
-        Status IrEmitter::HandleSend(HloInstruction *) {
+        Status NpuIrEmitter::HandleSend(HloInstruction *) {
             return Unimplemented("Send is not implemented on NPU");
         }
 
-        Status IrEmitter::HandleSendDone(HloInstruction *) {
+        Status NpuIrEmitter::HandleSendDone(HloInstruction *) {
             return Unimplemented("Send-Done is not implemented on NPU");
         }
 
-        Status IrEmitter::HandleRecv(HloInstruction *) {
+        Status NpuIrEmitter::HandleRecv(HloInstruction *) {
             return Unimplemented("Recv is not implemented on NPU");
         }
 
-        Status IrEmitter::HandleRecvDone(HloInstruction *) {
+        Status NpuIrEmitter::HandleRecvDone(HloInstruction *) {
             return Unimplemented("Recv-done is not implemented on NPU");
         }
 
-        Status IrEmitter::HandleTuple(HloInstruction *tuple) {
+        Status NpuIrEmitter::HandleTuple(HloInstruction *tuple) {
             bool all_tuple_elements_have_buffer =
                     c_all_of(tuple->operands(), [&](HloInstruction *tuple_element) {
                         return ir_emitter_context_->buffer_assignment().HasTopLevelAllocation(
@@ -147,7 +147,7 @@ namespace xla {
             return Status::OK();
         }
 
-        Status IrEmitter::HandleSelect(HloInstruction *select) {
+        Status NpuIrEmitter::HandleSelect(HloInstruction *select) {
             return Unimplemented("select is not implemented on NPU");
         }
 
@@ -177,11 +177,11 @@ namespace xla {
             }
         }  // namespace
 
-        Status IrEmitter::HandleDot(HloInstruction *dot) {
+        Status NpuIrEmitter::HandleDot(HloInstruction *dot) {
             return Unimplemented("CrossReplicaSum is not implemented on NPU.");
         }
 
-        Status IrEmitter::HandleConvolution(HloInstruction *convolution) {
+        Status NpuIrEmitter::HandleConvolution(HloInstruction *convolution) {
             if (ShapeUtil::HasZeroElements(convolution->shape())) {
                 // Emit no code for an empty output.
                 return Status::OK();
@@ -190,7 +190,7 @@ namespace xla {
                     "Hit a case for convolution that is not implemented on NPU.");
         }
 
-        Status IrEmitter::HandleFft(HloInstruction *fft) {
+        Status NpuIrEmitter::HandleFft(HloInstruction *fft) {
             if (ShapeUtil::HasZeroElements(fft->shape())) {
                 // Emit no code for an empty output.
                 return Status::OK();
@@ -198,39 +198,39 @@ namespace xla {
             return Unimplemented("Hit a case for fft that is not implemented on NPU.");
         }
 
-        Status IrEmitter::HandleCrossReplicaSum(HloInstruction *crs) {
+        Status NpuIrEmitter::HandleCrossReplicaSum(HloInstruction *crs) {
             return Unimplemented("CrossReplicaSum is not implemented on NPU.");
         }
 
-        Status IrEmitter::HandleParameter(HloInstruction *parameter) {
+        Status NpuIrEmitter::HandleParameter(HloInstruction *parameter) {
             return Status::OK();
         }
 
-        Status IrEmitter::HandleReduce(HloInstruction *reduce) {
+        Status NpuIrEmitter::HandleReduce(HloInstruction *reduce) {
             return Unimplemented("Reduce is not implemented on NPU.");
         }
 
-        Status IrEmitter::HandleFusion(HloInstruction *fusion) {
+        Status NpuIrEmitter::HandleFusion(HloInstruction *fusion) {
             return Unimplemented("Fusion is not implemented on NPU.");
         }
 
-        Status IrEmitter::HandleCall(HloInstruction *call) {
+        Status NpuIrEmitter::HandleCall(HloInstruction *call) {
             return Unimplemented("Call is not implemented on NPU.");
         }
 
-        Status IrEmitter::HandleCustomCall(HloInstruction *) {
+        Status NpuIrEmitter::HandleCustomCall(HloInstruction *) {
             return Unimplemented("custom-call is not implemented on NPU.");
         }
 
-        Status IrEmitter::HandleInfeed(HloInstruction *) {
+        Status NpuIrEmitter::HandleInfeed(HloInstruction *) {
             return Unimplemented("Infeed is not supported on NPU.");
         }
 
-        Status IrEmitter::HandleOutfeed(HloInstruction *) {
+        Status NpuIrEmitter::HandleOutfeed(HloInstruction *) {
             return Unimplemented("Outfeed is not supported on NPU.");
         }
 
-        Status IrEmitter::HandleRng(HloInstruction *random) {
+        Status NpuIrEmitter::HandleRng(HloInstruction *random) {
             thunk_sequence_->push_back(BuildKernelThunk(random));
             ElementalIrEmitter::HloToElementGeneratorMap operand_to_generator;
             for (const HloInstruction *operand : random->operands()) {
@@ -247,23 +247,23 @@ namespace xla {
                     .EmitLoop(IrName(random));
         }
 
-        Status IrEmitter::HandleWhile(HloInstruction *xla_while) {
+        Status NpuIrEmitter::HandleWhile(HloInstruction *xla_while) {
             return Unimplemented("While is not implement on NPU");
         }
 
-        Status IrEmitter::HandleGather(HloInstruction *gather) {
+        Status NpuIrEmitter::HandleGather(HloInstruction *gather) {
             return Unimplemented("Cather is not implement on NPU");
         }
 
-        Status IrEmitter::HandleCopy(HloInstruction *copy) {
+        Status NpuIrEmitter::HandleCopy(HloInstruction *copy) {
             return Unimplemented("Copy is not implement on NPU");
         }
 
-        Status IrEmitter::HandleConditional(HloInstruction *copy) {
+        Status NpuIrEmitter::HandleConditional(HloInstruction *copy) {
             return Unimplemented("Conditional is not implement on NPU");
         }
 
-        Status IrEmitter::HandleBatchNormInference(HloInstruction *) {
+        Status NpuIrEmitter::HandleBatchNormInference(HloInstruction *) {
             return Unimplemented(
                     "The NPU backend does not implement BatchNormInference directly.  It "
                             "should be lowered before IR emission to HLO-soup using "
@@ -271,7 +271,7 @@ namespace xla {
                             "CudnnBatchNormRewriter.");
         }
 
-        Status IrEmitter::HandleBatchNormTraining(HloInstruction *) {
+        Status NpuIrEmitter::HandleBatchNormTraining(HloInstruction *) {
             return Unimplemented(
                     "The NPU backend does not implement BatchNormTraining directly.  It "
                             "should be lowered before IR emission to HLO-soup using "
@@ -279,14 +279,14 @@ namespace xla {
                             "CudnnBatchNormRewriter.");
         }
 
-        Status IrEmitter::HandleBatchNormGrad(HloInstruction *) {
+        Status NpuIrEmitter::HandleBatchNormGrad(HloInstruction *) {
             return Unimplemented(
                     "The NPU backend does not implement BatchNormGrad directly.  It should "
                             "be lowered before IR emission to HLO-soup (using BatchNormRewriter) or "
                             "to a cudnn CustomCall using CudnnBatchNormRewriter.");
         }
 
-        Status IrEmitter::EmitTargetElementLoopInThunk(
+        Status NpuIrEmitter::EmitTargetElementLoopInThunk(
                 const HloInstruction &hlo,
                 const llvm_ir::ElementGenerator &element_generator, NpuKernelThunk *thunk) {
             VLOG(3) << bindings_.ToString();
@@ -318,7 +318,7 @@ namespace xla {
             return Status::OK();
         }
 
-        Status IrEmitter::EmitTargetElementLoop(
+        Status NpuIrEmitter::EmitTargetElementLoop(
                 const HloInstruction &hlo,
                 const llvm_ir::ElementGenerator &element_generator) {
             CHECK(NpuThunk::Kind::kKernel == LastThunk()->kind());
@@ -326,7 +326,7 @@ namespace xla {
                                                 static_cast<NpuKernelThunk *>(LastThunk()));
         }
 
-        llvm::Function *IrEmitter::BuildKernelPrototype(
+        llvm::Function *NpuIrEmitter::BuildKernelPrototype(
                 const HloInstruction &inst,
                 tensorflow::gtl::ArraySlice<const BufferAllocation *> args) {
             // Compute the kernel name. The opcode string may contain "-" which cannot be
@@ -484,7 +484,7 @@ namespace xla {
             return slices;
         }
 
-        std::unique_ptr<NpuKernelThunk> IrEmitter::BuildKernelThunk(const HloInstruction *inst) {
+        std::unique_ptr<NpuKernelThunk> NpuIrEmitter::BuildKernelThunk(const HloInstruction *inst) {
             const BufferAssignment &buffer_assn =
                     ir_emitter_context_->buffer_assignment();
 

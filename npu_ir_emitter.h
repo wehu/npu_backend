@@ -32,15 +32,15 @@
 namespace xla {
     namespace npu {
 
-        class IrEmitter : public DfsHloVisitorWithDefault {
+        class NpuIrEmitter : public DfsHloVisitorWithDefault {
         public:
-            IrEmitter(const HloModuleConfig &hlo_module_config,
+            NpuIrEmitter(const HloModuleConfig &hlo_module_config,
                       const HloComputation *hlo_computation,
                       IrEmitterContext *ir_emitter_context);
 
-            IrEmitter(const IrEmitter &) = delete;
+            NpuIrEmitter(const NpuIrEmitter &) = delete;
 
-            IrEmitter &operator=(const IrEmitter &) = delete;
+            NpuIrEmitter &operator=(const NpuIrEmitter &) = delete;
 
             Status DefaultAction(HloInstruction *hlo) override;
 

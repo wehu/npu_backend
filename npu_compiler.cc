@@ -228,6 +228,8 @@ namespace xla {
             //llvm_module.setTargetTriple(kTargetTriple);
             //llvm_module.setDataLayout(kDataLayout);
 
+            // Here we create a jit module which will be used
+            // to compile kernel to native cpu code as a mock.
             auto jit = xla::MakeUnique<xla::cpu::SimpleOrcJIT>(
                     CompilerTargetOptions(module->config()),
                     CodeGenOptLevel(module->config()),
@@ -270,7 +272,7 @@ namespace xla {
                                                 jit.get());
 
             HloComputation *entry_computation = module->entry_computation();
-            IrEmitter ir_emitter(module->config(), entry_computation,
+            NpuIrEmitter ir_emitter(module->config(), entry_computation,
                                  &ir_emitter_context);
             {
                 XLA_SCOPED_LOGGING_TIMER("NpuCompiler::RunBackend - IR emission");
