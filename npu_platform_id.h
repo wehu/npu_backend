@@ -7,10 +7,12 @@
 
 #include "tensorflow/stream_executor/platform.h"
 
-namespace npu {
+namespace xla {
+    namespace npu {
 
-    extern const perftools::gputools::Platform::Id npuPlatformId;
+        extern const perftools::gputools::Platform::Id npuPlatformId;
 
+    }
 }
 
 

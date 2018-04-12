@@ -14,62 +14,62 @@
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 
-namespace npu {
+namespace xla {
+    namespace npu {
 
-    using namespace xla;
+        class NpuExecutable;
 
-    class NpuExecutable;
+        class NpuThunk {
+        public:
+            enum class Kind {
+                kConditional,
+                kConvolution,
+                kCopy,
+                kFft,
+                kInfeed,
+                kSequential,
+                kTuple,
+                kWhile,
+                kKernel,
+            };
 
-    class NpuThunk {
-    public:
-        enum class Kind {
-            kConditional,
-            kConvolution,
-            kCopy,
-            kFft,
-            kInfeed,
-            kSequential,
-            kTuple,
-            kWhile,
-            kKernel,
+            explicit NpuThunk(Kind kind, const HloInstruction *hlo_instruction)
+                    : kind_(kind), hlo_instruction_(hlo_instruction) {}
+
+            virtual ~NpuThunk() {}
+
+            NpuThunk(const NpuThunk &) = delete;
+
+            NpuThunk &operator=(const NpuThunk &) = delete;
+
+            Kind kind() const { return kind_; }
+
+            const HloInstruction *hlo_instruction() const { return hlo_instruction_; }
+
+            virtual tensorflow::Status Initialize(const NpuExecutable &executable) {
+                return tensorflow::Status::OK();
+            }
+
+            virtual bool ShouldHaltAllActivityBeforeRunning(
+                    perftools::gputools::Stream * /*stream*/) {
+                return false;
+            }
+
+            virtual bool ShouldBlockFutureThunks() { return false; }
+
+            virtual tensorflow::Status ExecuteOnStream(
+                    const NpuBufferAllocations &buffer_allocations,
+                    perftools::gputools::Stream *stream) = 0;
+
+        private:
+            Kind kind_;
+            const HloInstruction *hlo_instruction_;
         };
 
-        explicit NpuThunk(Kind kind, const HloInstruction *hlo_instruction)
-                : kind_(kind), hlo_instruction_(hlo_instruction) {}
+        using NpuThunkSequence = std::vector<std::unique_ptr<NpuThunk>>;
 
-        virtual ~NpuThunk() {}
-
-        NpuThunk(const NpuThunk &) = delete;
-
-        NpuThunk &operator=(const NpuThunk &) = delete;
-
-        Kind kind() const { return kind_; }
-
-        const HloInstruction *hlo_instruction() const { return hlo_instruction_; }
-
-        virtual tensorflow::Status Initialize(const NpuExecutable &executable) {
-            return tensorflow::Status::OK();
-        }
-
-        virtual bool ShouldHaltAllActivityBeforeRunning(
-                perftools::gputools::Stream * /*stream*/) {
-            return false;
-        }
-
-        virtual bool ShouldBlockFutureThunks() { return false; }
-
-        virtual tensorflow::Status ExecuteOnStream(
-                const NpuBufferAllocations &buffer_allocations,
-                perftools::gputools::Stream *stream) = 0;
-
-    private:
-        Kind kind_;
-        const HloInstruction *hlo_instruction_;
-    };
-
-    using NpuThunkSequence = std::vector<std::unique_ptr<NpuThunk>>;
-
-}  // namespace npu
+    }  // namespace npu
+} // namespace xla
 
 
 #endif //TENSORFLOW_NPU_THUNK_H

@@ -15,32 +15,34 @@
 #include "tensorflow/core/lib/gtl/array_slice.h"
 #include "tensorflow/core/platform/stream_executor_no_cuda.h"
 
-namespace npu {
+namespace xla {
+    namespace npu {
 
-    class NpuTupleThunk : public NpuThunk {
-    public:
-        NpuTupleThunk(tensorflow::gtl::ArraySlice<BufferAllocation::Slice>
-                   tuple_element_buffers,
-                   const BufferAllocation::Slice &dest_buffer,
-                   const HloInstruction *hlo_instruction)
-                : NpuThunk(Kind::kTuple, hlo_instruction),
-                  tuple_element_buffers_(tuple_element_buffers.begin(),
-                                         tuple_element_buffers.end()),
-                  dest_buffer_(dest_buffer) {}
+        class NpuTupleThunk : public NpuThunk {
+        public:
+            NpuTupleThunk(tensorflow::gtl::ArraySlice<BufferAllocation::Slice>
+                          tuple_element_buffers,
+                          const BufferAllocation::Slice &dest_buffer,
+                          const HloInstruction *hlo_instruction)
+                    : NpuThunk(Kind::kTuple, hlo_instruction),
+                      tuple_element_buffers_(tuple_element_buffers.begin(),
+                                             tuple_element_buffers.end()),
+                      dest_buffer_(dest_buffer) {}
 
-        NpuTupleThunk(const NpuTupleThunk &) = delete;
+            NpuTupleThunk(const NpuTupleThunk &) = delete;
 
-        NpuTupleThunk &operator=(const NpuTupleThunk &) = delete;
+            NpuTupleThunk &operator=(const NpuTupleThunk &) = delete;
 
-        tensorflow::Status ExecuteOnStream(
-                const NpuBufferAllocations &buffer_allocations,
-                perftools::gputools::Stream *stream) override;
+            tensorflow::Status ExecuteOnStream(
+                    const NpuBufferAllocations &buffer_allocations,
+                    perftools::gputools::Stream *stream) override;
 
-    private:
-        const std::vector<BufferAllocation::Slice> tuple_element_buffers_;
-        const BufferAllocation::Slice dest_buffer_;
-    };
+        private:
+            const std::vector<BufferAllocation::Slice> tuple_element_buffers_;
+            const BufferAllocation::Slice dest_buffer_;
+        };
 
-}  // namespace npu
+    }  // namespace npu
+} // namespace xla
 
 #endif //TENSORFLOW_NPU_TUPLE_THUNK_H

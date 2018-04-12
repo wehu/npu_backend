@@ -4,8 +4,10 @@
 
 #include "npu_constants.h"
 
-namespace npu {
+namespace xla {
+    namespace npu {
 
-    const int64 npuAlignBytes = 8;
+        const int64 npuAlignBytes = 8;
 
-}  // namespace npu
+    }  // namespace npu
+} // namespace xla

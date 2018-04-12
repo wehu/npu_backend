@@ -4,9 +4,11 @@
 
 #include "npu_platform_id.h"
 
-namespace npu {
+namespace xla {
+    namespace npu {
 
-    PLATFORM_DEFINE_ID(npuPlatformId)
+        PLATFORM_DEFINE_ID(npuPlatformId)
 
+    }
 }
 

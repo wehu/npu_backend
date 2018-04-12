@@ -17,45 +17,48 @@
 #include "tensorflow/stream_executor/stream_executor_pimpl.h"
 #include "tensorflow/stream_executor/trace_listener.h"
 
-namespace npu {
+namespace se = perftools::gputools;
 
-    using namespace perftools::gputools;
+namespace xla {
+    namespace npu {
 
-    class NpuPlatform : public Platform {
-    public:
-        NpuPlatform();
-        ~NpuPlatform() override;
+        class NpuPlatform : public se::Platform {
+        public:
+            NpuPlatform();
 
-        Platform::Id id() const override;
+            ~NpuPlatform() override;
 
-        int VisibleDeviceCount() const override;
+            se::Platform::Id id() const override;
 
-        const string& Name() const override;
+            int VisibleDeviceCount() const override;
 
-        port::StatusOr<StreamExecutor*> ExecutorForDevice(int ordinal) override;
+            const se::string &Name() const override;
 
-        port::StatusOr<StreamExecutor*> ExecutorForDeviceWithPluginConfig(
-                int ordinal, const PluginConfig& config) override;
+            se::port::StatusOr<se::StreamExecutor *> ExecutorForDevice(int ordinal) override;
 
-        port::StatusOr<StreamExecutor*> GetExecutor(
-                const StreamExecutorConfig& config) override;
+            se::port::StatusOr<se::StreamExecutor *> ExecutorForDeviceWithPluginConfig(
+                    int ordinal, const se::PluginConfig &config) override;
 
-        port::StatusOr<std::unique_ptr<StreamExecutor>> GetUncachedExecutor(
-                const StreamExecutorConfig& config) override;
+            se::port::StatusOr<se::StreamExecutor *> GetExecutor(
+                    const se::StreamExecutorConfig &config) override;
 
-        void RegisterTraceListener(std::unique_ptr<TraceListener> listener) override;
+            se::port::StatusOr<std::unique_ptr<se::StreamExecutor>> GetUncachedExecutor(
+                    const se::StreamExecutorConfig &config) override;
 
-        void UnregisterTraceListener(TraceListener* listener) override;
+            void RegisterTraceListener(std::unique_ptr<se::TraceListener> listener) override;
 
-    private:
+            void UnregisterTraceListener(se::TraceListener *listener) override;
 
-        string name_;
+        private:
 
-        ExecutorCache executor_cache_;
+            se::string name_;
 
-        SE_DISALLOW_COPY_AND_ASSIGN(NpuPlatform);
-    };
+            se::ExecutorCache executor_cache_;
 
-}  // namespace npu
+            SE_DISALLOW_COPY_AND_ASSIGN (NpuPlatform);
+        };
+
+    }  // namespace npu
+} // namespace xla
 
 #endif  // TENSORFLOW_NPU_PLATFORM_H_

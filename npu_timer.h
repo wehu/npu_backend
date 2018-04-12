@@ -8,44 +8,47 @@
 
 #include "tensorflow/stream_executor/stream_executor_internal.h"
 
-namespace npu {
+namespace se = perftools::gputools;
 
-    using namespace perftools::gputools;
+namespace xla {
+    namespace npu {
 
-    class NpuTimer : public internal::TimerInterface {
-    public:
-        explicit NpuTimer(NpuExecutor *parent)
-                : parent_(parent) {}
+        class NpuTimer : public se::internal::TimerInterface {
+        public:
+            explicit NpuTimer(NpuExecutor *parent)
+                    : parent_(parent) {}
 
-        ~NpuTimer() override {}
+            ~NpuTimer() override {}
 
-        bool Init();
+            bool Init();
 
-        void Destroy();
+            void Destroy();
 
-        bool Start(Stream *stream);
+            bool Start(se::Stream *stream);
 
-        bool Stop(Stream *stream);
+            bool Stop(se::Stream *stream);
 
-        uint64 Microseconds() const override;
-        uint64 Nanoseconds() const override;
+            se::uint64 Microseconds() const override;
 
-    private:
-        NpuExecutor *parent_;
+            se::uint64 Nanoseconds() const override;
 
-        using clock = std::chrono::high_resolution_clock;
+        private:
+            NpuExecutor *parent_;
 
-        clock::time_point start_time_;
-        clock::duration duration_;
+            using clock = std::chrono::high_resolution_clock;
 
-        // Actually starts (rather than enqueues starting) the timer.
-        void StartNow();
+            clock::time_point start_time_;
+            clock::duration duration_;
 
-        // Actually stops (rather than enqueues stopping) the timer.
-        void StopNow();
+            // Actually starts (rather than enqueues starting) the timer.
+            void StartNow();
 
-    };
+            // Actually stops (rather than enqueues stopping) the timer.
+            void StopNow();
 
-}  // namespace npu
+        };
+
+    }  // namespace npu
+} // namespace xla
 
 #endif  // TENSORFLOW_NPU_TIMER_H_

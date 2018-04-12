@@ -21,115 +21,117 @@
 
 namespace se = ::perftools::gputools;
 
-namespace npu {
+namespace xla {
+    namespace npu {
 
-    NpuTransferManager::NpuTransferManager()
-            : GenericTransferManager(
-            npuPlatformId,
-            /*pointer_size=*/llvm::DataLayout(npu::NpuCompiler::kDataLayout)
-                    .getPointerSize(0 /* default address space */)) {}
+        NpuTransferManager::NpuTransferManager()
+                : GenericTransferManager(
+                npuPlatformId,
+                /*pointer_size=*/llvm::DataLayout(npu::NpuCompiler::kDataLayout)
+                        .getPointerSize(0 /* default address space */)) {}
 
-    Status NpuTransferManager::TransferLiteralToInfeed(se::StreamExecutor* executor,
-                                                       const Literal& literal) {
-        const Shape& shape = literal.shape();
-        VLOG(2) << "Transferring literal to infeed with shape: "
-                << ShapeUtil::HumanString(shape);
+        Status NpuTransferManager::TransferLiteralToInfeed(se::StreamExecutor *executor,
+                                                           const Literal &literal) {
+            const Shape &shape = literal.shape();
+            VLOG(2) << "Transferring literal to infeed with shape: "
+                    << ShapeUtil::HumanString(shape);
 
-        if (!ShapeUtil::IsTuple(shape)) {
-            int64 size = GetByteSizeRequirement(shape);
-            return TransferBufferToInfeed(executor, size, literal.untyped_data());
-        }
-
-        if (ShapeUtil::IsNestedTuple(shape)) {
-            return Unimplemented(
-                    "Infeed with a nested tuple shape is not supported: %s",
-                    ShapeUtil::HumanString(literal.shape()).c_str());
-        }
-
-        std::vector<NpuInfeedBuffer*> buffers;
-        buffers.reserve(ShapeUtil::TupleElementCount(shape));
-        auto cleanup = tensorflow::gtl::MakeCleanup([buffers]() {
-            for (NpuInfeedBuffer* b : buffers) {
-                b->Done();
+            if (!ShapeUtil::IsTuple(shape)) {
+                int64 size = GetByteSizeRequirement(shape);
+                return TransferBufferToInfeed(executor, size, literal.untyped_data());
             }
-        });
 
-        for (int64 i = 0; i < ShapeUtil::TupleElementCount(shape); ++i) {
-            const Shape& tuple_element_shape =
-                    ShapeUtil::GetTupleElementShape(shape, i);
-            int64 tuple_element_size = GetByteSizeRequirement(tuple_element_shape);
-            TF_ASSIGN_OR_RETURN(
-                    NpuInfeedBuffer * buffer,
-                    TransferBufferToInfeedInternal(executor, tuple_element_size,
-                                                   literal.untyped_data({i})));
-            buffers.push_back(buffer);
-        }
-
-        cleanup.release();
-        return EnqueueBuffersToInfeed(executor, buffers);
-    }
-
-    Status NpuTransferManager::TransferBufferToInfeed(se::StreamExecutor* executor,
-                                                      int64 size,
-                                                      const void* source) {
-        TF_ASSIGN_OR_RETURN(NpuInfeedBuffer * buffer,
-                            TransferBufferToInfeedInternal(executor, size, source));
-        return EnqueueBuffersToInfeed(executor, {buffer});
-    }
-
-    Status NpuTransferManager::EnqueueBuffersToInfeed(
-            se::StreamExecutor* executor, std::vector<NpuInfeedBuffer*> buffers) {
-        NpuInfeedManager* infeed_manager = GetOrCreateNpuInfeedManager();
-        se::Stream* stream = infeed_manager->GetStream(executor);
-
-        Status block_status = stream->BlockHostUntilDone();
-        if (!block_status.ok()) {
-            for (NpuInfeedBuffer* b : buffers) {
-                b->Done();
+            if (ShapeUtil::IsNestedTuple(shape)) {
+                return Unimplemented(
+                        "Infeed with a nested tuple shape is not supported: %s",
+                        ShapeUtil::HumanString(literal.shape()).c_str());
             }
-            return InternalError("Failed to complete data transfer on stream %p: %s",
-                                 stream, block_status.error_message().c_str());
+
+            std::vector<NpuInfeedBuffer *> buffers;
+            buffers.reserve(ShapeUtil::TupleElementCount(shape));
+            auto cleanup = tensorflow::gtl::MakeCleanup([buffers]() {
+                for (NpuInfeedBuffer *b : buffers) {
+                    b->Done();
+                }
+            });
+
+            for (int64 i = 0; i < ShapeUtil::TupleElementCount(shape); ++i) {
+                const Shape &tuple_element_shape =
+                        ShapeUtil::GetTupleElementShape(shape, i);
+                int64 tuple_element_size = GetByteSizeRequirement(tuple_element_shape);
+                TF_ASSIGN_OR_RETURN(
+                        NpuInfeedBuffer *buffer,
+                        TransferBufferToInfeedInternal(executor, tuple_element_size,
+                                                       literal.untyped_data({i})));
+                buffers.push_back(buffer);
+            }
+
+            cleanup.release();
+            return EnqueueBuffersToInfeed(executor, buffers);
         }
 
-        infeed_manager->EnqueueBuffers(buffers);
-
-        VLOG(2) << "Infeed data transferred";
-
-        return Status::OK();
-    }
-
-    StatusOr<NpuInfeedBuffer*> NpuTransferManager::TransferBufferToInfeedInternal(
-            se::StreamExecutor* executor, int64 size, const void* source) {
-        if (size > std::numeric_limits<int32>::max()) {
-            return InvalidArgument("Infeed shape is too large: needs %lld bytes", size);
+        Status NpuTransferManager::TransferBufferToInfeed(se::StreamExecutor *executor,
+                                                          int64 size,
+                                                          const void *source) {
+            TF_ASSIGN_OR_RETURN(NpuInfeedBuffer *buffer,
+                                TransferBufferToInfeedInternal(executor, size, source));
+            return EnqueueBuffersToInfeed(executor, {buffer});
         }
 
-        if (size == 0) {
-            return InvalidArgument("Infeed shape needs 0 bytes");
+        Status NpuTransferManager::EnqueueBuffersToInfeed(
+                se::StreamExecutor *executor, std::vector<NpuInfeedBuffer *> buffers) {
+            NpuInfeedManager *infeed_manager = GetOrCreateNpuInfeedManager();
+            se::Stream *stream = infeed_manager->GetStream(executor);
+
+            Status block_status = stream->BlockHostUntilDone();
+            if (!block_status.ok()) {
+                for (NpuInfeedBuffer *b : buffers) {
+                    b->Done();
+                }
+                return InternalError("Failed to complete data transfer on stream %p: %s",
+                                     stream, block_status.error_message().c_str());
+            }
+
+            infeed_manager->EnqueueBuffers(buffers);
+
+            VLOG(2) << "Infeed data transferred";
+
+            return Status::OK();
         }
 
-        NpuInfeedManager* infeed_manager = GetOrCreateNpuInfeedManager();
-        se::Stream* stream = infeed_manager->GetStream(executor);
-        if (stream == nullptr) {
-            return InternalError("Failed to obtain a stream");
+        StatusOr<NpuInfeedBuffer *> NpuTransferManager::TransferBufferToInfeedInternal(
+                se::StreamExecutor *executor, int64 size, const void *source) {
+            if (size > std::numeric_limits<int32>::max()) {
+                return InvalidArgument("Infeed shape is too large: needs %lld bytes", size);
+            }
+
+            if (size == 0) {
+                return InvalidArgument("Infeed shape needs 0 bytes");
+            }
+
+            NpuInfeedManager *infeed_manager = GetOrCreateNpuInfeedManager();
+            se::Stream *stream = infeed_manager->GetStream(executor);
+            if (stream == nullptr) {
+                return InternalError("Failed to obtain a stream");
+            }
+
+            NpuInfeedBuffer *buffer = new NpuInfeedBuffer(executor, size);
+            stream->ThenMemcpy(buffer->device_memory(), source, size);
+
+            VLOG(2) << "Queued infeed data on stream " << stream;
+
+            return buffer;
         }
 
-        NpuInfeedBuffer* buffer = new NpuInfeedBuffer(executor, size);
-        stream->ThenMemcpy(buffer->device_memory(), source, size);
-
-        VLOG(2) << "Queued infeed data on stream " << stream;
-
-        return buffer;
-    }
-
-}  // namespace npu
+    }  // namespace npu
+} // namespace xla
 
 static std::unique_ptr<xla::TransferManager> CreateNpuTransferManager() {
-    return xla::MakeUnique<npu::NpuTransferManager>();
+    return xla::MakeUnique<xla::npu::NpuTransferManager>();
 }
 
 static bool InitModule() {
-    xla::TransferManager::RegisterTransferManager(npu::npuPlatformId,
+    xla::TransferManager::RegisterTransferManager(xla::npu::npuPlatformId,
                                                   &CreateNpuTransferManager);
     return true;
 }

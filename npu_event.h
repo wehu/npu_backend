@@ -7,33 +7,35 @@
 #include "tensorflow/stream_executor/lib/status.h"
 #include "tensorflow/core/lib/gtl/flatset.h"
 
-namespace npu {
+namespace se = perftools::gputools;
 
-    using namespace perftools::gputools;
+namespace xla {
+    namespace npu {
 
-    class NpuEvent : public internal::EventInterface {
-    public:
-        explicit NpuEvent(NpuExecutor* parent);
+        class NpuEvent : public se::internal::EventInterface {
+        public:
+            explicit NpuEvent(NpuExecutor *parent);
 
-        ~NpuEvent() override;
+            ~NpuEvent() override;
 
-        port::Status Init();
+            se::port::Status Init();
 
-        port::Status Destroy();
+            se::port::Status Destroy();
 
-        port::Status Record(Stream* stream);
+            se::port::Status Record(se::Stream *stream);
 
-        Event::Status PollForStatus();
+            se::Event::Status PollForStatus();
 
-    private:
-        NpuExecutor* parent_;
+        private:
+            NpuExecutor *parent_;
 
-        tensorflow::gtl::FlatSet<Stream*> streams_;
+            tensorflow::gtl::FlatSet<se::Stream *> streams_;
 
-    };
+        };
 
-    NpuEvent *AsNpuEvent(Event *event);
+        NpuEvent *AsNpuEvent(se::Event *event);
 
-}  // namespace npu
+    }  // namespace npu
+} // namespace npu
 
 #endif  // TENSORFLOW_NPU_EVENT_H_

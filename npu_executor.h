@@ -13,157 +13,163 @@
 #include "tensorflow/stream_executor/platform/thread_annotations.h"
 #include "tensorflow/stream_executor/stream_executor_internal.h"
 
-namespace npu {
+namespace se = perftools::gputools;
 
-    using namespace perftools::gputools;
+namespace xla {
+    namespace npu {
 
-    class NpuExecutor : public perftools::gputools::internal::StreamExecutorInterface {
-    public:
-        explicit NpuExecutor(const PluginConfig &plugin_config)
-                : device_ordinal_(0),
-                  plugin_config_(plugin_config) {}
+        class NpuExecutor : public se::internal::StreamExecutorInterface {
+        public:
+            explicit NpuExecutor(const se::PluginConfig &plugin_config)
+                    : device_ordinal_(0),
+                      plugin_config_(plugin_config) {}
 
-        ~NpuExecutor() override {};
+            ~NpuExecutor() override {};
 
-        port::Status Init(int device_ordinal, DeviceOptions device_options) override;
+            se::port::Status Init(int device_ordinal, se::DeviceOptions device_options) override;
 
-        bool GetKernel(const MultiKernelLoaderSpec &spec,
-                       KernelBase *kernel) override;
-        void UnloadKernel(const KernelBase *kernel) override;
+            bool GetKernel(const se::MultiKernelLoaderSpec &spec,
+                           se::KernelBase *kernel) override;
 
-        bool Launch(Stream *stream, const ThreadDim &thread_dims,
-                    const BlockDim &block_dims, const KernelBase &k,
-                    const KernelArgsArrayBase &args) override;
+            void UnloadKernel(const se::KernelBase *kernel) override;
 
-        void *Allocate(uint64 size) override;
+            bool Launch(se::Stream *stream, const se::ThreadDim &thread_dims,
+                        const se::BlockDim &block_dims, const se::KernelBase &k,
+                        const se::KernelArgsArrayBase &args) override;
 
-        void *AllocateSubBuffer(DeviceMemoryBase *mem, uint64 offset_bytes,
-                                uint64 size_bytes) override;
+            void *Allocate(se::uint64 size) override;
 
-        void Deallocate(DeviceMemoryBase *mem) override;
+            void *AllocateSubBuffer(se::DeviceMemoryBase *mem, se::uint64 offset_bytes,
+                                    se::uint64 size_bytes) override;
 
-        void *HostMemoryAllocate(uint64 size) override {
-            return new char[size];
-        }
+            void Deallocate(se::DeviceMemoryBase *mem) override;
 
-        void HostMemoryDeallocate(void *location) override {
-        }
+            void *HostMemoryAllocate(se::uint64 size) override {
+                return new char[size];
+            }
 
-        bool HostMemoryRegister(void *location, uint64 size) override;
+            void HostMemoryDeallocate(void *location) override {
+            }
 
-        bool HostMemoryUnregister(void *location) override;
+            bool HostMemoryRegister(void *location, se::uint64 size) override;
 
-        bool SynchronizeAllActivity() override;
+            bool HostMemoryUnregister(void *location) override;
 
-        bool SynchronousMemZero(DeviceMemoryBase *location, uint64 size) override;
+            bool SynchronizeAllActivity() override;
 
-        bool SynchronousMemSet(DeviceMemoryBase *location, int value,
-                               uint64 size) override;
+            bool SynchronousMemZero(se::DeviceMemoryBase *location, se::uint64 size) override;
 
-        port::Status SynchronousMemcpy(DeviceMemoryBase *gpu_dst,
-                                       const void *host_src, uint64 size) override;
+            bool SynchronousMemSet(se::DeviceMemoryBase *location, int value,
+                                   se::uint64 size) override;
 
-        port::Status SynchronousMemcpy(void *host_dst,
-                                       const DeviceMemoryBase &gpu_src,
-                                       uint64 size) override;
+            se::port::Status SynchronousMemcpy(se::DeviceMemoryBase *gpu_dst,
+                                           const void *host_src, se::uint64 size) override;
 
-        port::Status SynchronousMemcpyDeviceToDevice(DeviceMemoryBase *gpu_dst,
-                                                     const DeviceMemoryBase &gpu_src,
-                                                     uint64 size) override;
+            se::port::Status SynchronousMemcpy(void *host_dst,
+                                           const se::DeviceMemoryBase &gpu_src,
+                                           se::uint64 size) override;
 
-        bool MemZero(Stream *stream, DeviceMemoryBase *location,
-                     uint64 size) override;
-        bool Memset(Stream *stream, DeviceMemoryBase *location, uint8 pattern,
-                    uint64 size) override;
-        bool Memset32(Stream *stream, DeviceMemoryBase *location, uint32 pattern,
-                      uint64 size) override;
+            se::port::Status SynchronousMemcpyDeviceToDevice(se::DeviceMemoryBase *gpu_dst,
+                                                         const se::DeviceMemoryBase &gpu_src,
+                                                             se::uint64 size) override;
 
-        bool Memcpy(Stream *stream, void *host_dst, const DeviceMemoryBase &gpu_src,
-                    uint64 size) override;
-        bool Memcpy(Stream *stream, DeviceMemoryBase *gpu_dst, const void *host_src,
-                    uint64 size) override;
+            bool MemZero(se::Stream *stream, se::DeviceMemoryBase *location,
+                         se::uint64 size) override;
 
-        bool MemcpyDeviceToDevice(Stream *stream, DeviceMemoryBase *gpu_dst,
-                                  const DeviceMemoryBase &gpu_src,
-                                  uint64 size) override;
+            bool Memset(se::Stream *stream, se::DeviceMemoryBase *location, se::uint8 pattern,
+                        se::uint64 size) override;
 
-        bool HostCallback(Stream *stream, std::function<void()> callback) override;
+            bool Memset32(se::Stream *stream, se::DeviceMemoryBase *location, se::uint32 pattern,
+                          se::uint64 size) override;
 
-        bool AllocateStream(Stream *stream) override;
+            bool Memcpy(se::Stream *stream, void *host_dst, const se::DeviceMemoryBase &gpu_src,
+                        se::uint64 size) override;
 
-        void DeallocateStream(Stream *stream) override;
+            bool Memcpy(se::Stream *stream, se::DeviceMemoryBase *gpu_dst, const void *host_src,
+                        se::uint64 size) override;
 
-        bool CreateStreamDependency(Stream *dependent, Stream *other) override;
+            bool MemcpyDeviceToDevice(se::Stream *stream, se::DeviceMemoryBase *gpu_dst,
+                                      const se::DeviceMemoryBase &gpu_src,
+                                      se::uint64 size) override;
 
-        bool AllocateTimer(Timer *timer) override;
+            bool HostCallback(se::Stream *stream, std::function<void()> callback) override;
 
-        void DeallocateTimer(Timer *timer) override;
+            bool AllocateStream(se::Stream *stream) override;
 
-        bool StartTimer(Stream *stream, Timer *timer) override;
+            void DeallocateStream(se::Stream *stream) override;
 
-        bool StopTimer(Stream *stream, Timer *timer) override;
+            bool CreateStreamDependency(se::Stream *dependent, se::Stream *other) override;
 
-        port::Status AllocateEvent(Event *event) override;
+            bool AllocateTimer(se::Timer *timer) override;
 
-        port::Status DeallocateEvent(Event *event) override;
+            void DeallocateTimer(se::Timer *timer) override;
 
-        port::Status RecordEvent(Stream *stream, Event *event) override;
+            bool StartTimer(se::Stream *stream, se::Timer *timer) override;
 
-        port::Status WaitForEvent(Stream *stream, Event *event) override;
+            bool StopTimer(se::Stream *stream, se::Timer *timer) override;
 
-        Event::Status PollForEventStatus(Event *event) override;
+            se::port::Status AllocateEvent(se::Event *event) override;
 
-        port::Status BlockHostUntilDone(Stream *stream) override;
+            se::port::Status DeallocateEvent(se::Event *event) override;
 
-        int PlatformDeviceCount() override { return 1; }
+            se::port::Status RecordEvent(se::Stream *stream, se::Event *event) override;
 
-        port::Status EnablePeerAccessTo(StreamExecutorInterface *other) override;
+            se::port::Status WaitForEvent(se::Stream *stream, se::Event *event) override;
 
-        bool CanEnablePeerAccessTo(StreamExecutorInterface *other) override;
+            se::Event::Status PollForEventStatus(se::Event *event) override;
 
-        SharedMemoryConfig GetDeviceSharedMemoryConfig() override;
+            se::port::Status BlockHostUntilDone(se::Stream *stream) override;
 
-        port::Status SetDeviceSharedMemoryConfig(SharedMemoryConfig config) override;
+            int PlatformDeviceCount() override { return 1; }
 
-        bool DeviceMemoryUsage(int64 *free, int64 *total) const override;
+            se::port::Status EnablePeerAccessTo(StreamExecutorInterface *other) override;
 
-        bool GetSymbol(const string& symbol_name, void **mem, size_t *bytes) override;
+            bool CanEnablePeerAccessTo(StreamExecutorInterface *other) override;
 
-        DeviceDescription *PopulateDeviceDescription() const override;
+            se::SharedMemoryConfig GetDeviceSharedMemoryConfig() override;
 
-        bool SupportsBlas() const override;
+            se::port::Status SetDeviceSharedMemoryConfig(se::SharedMemoryConfig config) override;
 
-        blas::BlasSupport *CreateBlas() override;
+            bool DeviceMemoryUsage(se::int64 *free, se::int64 *total) const override;
 
-        bool SupportsFft() const override;
+            bool GetSymbol(const se::string &symbol_name, void **mem, size_t *bytes) override;
 
-        fft::FftSupport *CreateFft() override;
+            se::DeviceDescription *PopulateDeviceDescription() const override;
 
-        bool SupportsRng() const override;
+            bool SupportsBlas() const override;
 
-        rng::RngSupport *CreateRng() override;
+            se::blas::BlasSupport *CreateBlas() override;
 
-        bool SupportsDnn() const override;
+            bool SupportsFft() const override;
 
-        dnn::DnnSupport *CreateDnn() override;
+            se::fft::FftSupport *CreateFft() override;
 
-        std::unique_ptr<perftools::gputools::internal::EventInterface> CreateEventImplementation() override;
+            bool SupportsRng() const override;
 
-        std::unique_ptr<perftools::gputools::internal::KernelInterface> CreateKernelImplementation() override;
+            se::rng::RngSupport *CreateRng() override;
 
-        std::unique_ptr<perftools::gputools::internal::StreamInterface> GetStreamImplementation() override;
+            bool SupportsDnn() const override;
 
-        std::unique_ptr<perftools::gputools::internal::TimerInterface> GetTimerImplementation() override;
+            se::dnn::DnnSupport *CreateDnn() override;
 
-    private:
+            std::unique_ptr<se::internal::EventInterface> CreateEventImplementation() override;
 
-        int device_ordinal_;
+            std::unique_ptr<se::internal::KernelInterface> CreateKernelImplementation() override;
 
-        PluginConfig plugin_config_;
+            std::unique_ptr<se::internal::StreamInterface> GetStreamImplementation() override;
 
-        SE_DISALLOW_COPY_AND_ASSIGN(NpuExecutor);
-    };
+            std::unique_ptr<se::internal::TimerInterface> GetTimerImplementation() override;
 
-}  // namespace npu
+        private:
+
+            int device_ordinal_;
+
+            se::PluginConfig plugin_config_;
+
+            SE_DISALLOW_COPY_AND_ASSIGN (NpuExecutor);
+        };
+
+    }  // namespace npu
+} // namespace xla
 
 #endif  // TENSORFLOW_NPU_EXECUTOR_H_

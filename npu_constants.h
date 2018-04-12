@@ -7,12 +7,14 @@
 
 #include "tensorflow/compiler/xla/types.h"
 
-namespace npu {
+namespace xla {
+    namespace npu {
 
-    using namespace xla;
+        using namespace xla;
 
-    extern const int64 npuAlignBytes;
+        extern const int64 npuAlignBytes;
 
-}  // namespace npu
+    }  // namespace npu
+} // namespace xla
 
 #endif //TENSORFLOW_NPU_CONSTANTS_H

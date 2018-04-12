@@ -8,45 +8,50 @@
 #include "tensorflow/stream_executor/lib/threadpool.h"
 #include "tensorflow/stream_executor/stream_executor_internal.h"
 
-namespace npu {
+namespace se = perftools::gputools;
 
-    class NpuStream : public perftools::gputools::internal::StreamInterface {
-    public:
-        NpuStream(NpuExecutor *parent);
+namespace xla {
+    namespace npu {
 
-        ~NpuStream() override {}
+        class NpuStream : public se::internal::StreamInterface {
+        public:
+            NpuStream(NpuExecutor *parent);
 
-        bool Init();
+            ~NpuStream() override {}
 
-        void Destroy();
+            bool Init();
 
-        bool IsIdle() const;
+            void Destroy();
 
-        bool EnqueueTask(std::function<void()> task);
+            bool IsIdle() const;
 
-        void *CudaStreamHack() override { return nullptr; }
-        void **CudaStreamMemberHack() override { return nullptr; }
+            bool EnqueueTask(std::function<void()> task);
 
-        void BlockUntilDone();
+            void *CudaStreamHack() override { return nullptr; }
 
-        NpuExecutor *parent() const { return parent_; }
+            void **CudaStreamMemberHack() override { return nullptr; }
 
-    private:
-        NpuExecutor *parent_;
+            void BlockUntilDone();
 
-        // Use only one thread and own task queue to preserve FIFO ordering
-        // for the operations enqueued by any given stream.
-        static const int kExecutorThreads = 1;
-        std::unique_ptr<port::ThreadPool> host_executor_;
+            NpuExecutor *parent() const { return parent_; }
 
-        mutex mu_;
-        int pending_tasks_ GUARDED_BY(mu_) = 0;
-        condition_variable completion_condition_;
+        private:
+            NpuExecutor *parent_;
 
-    };
+            // Use only one thread and own task queue to preserve FIFO ordering
+            // for the operations enqueued by any given stream.
+            static const int kExecutorThreads = 1;
+            std::unique_ptr<se::port::ThreadPool> host_executor_;
 
-    NpuStream *AsNpuStream(Stream *stream);
+            se::mutex mu_;
+            int pending_tasks_ GUARDED_BY(mu_) = 0;
+            se::condition_variable completion_condition_;
 
-}  // namespace npu
+        };
+
+        NpuStream *AsNpuStream(se::Stream *stream);
+
+    }  // namespace npu
+} // namespace xal
 
 #endif  // TENSORFLOW_NPU_STREAM_H_
