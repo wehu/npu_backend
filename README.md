@@ -2,6 +2,8 @@
 
 This is a tenserflow backend which is like a gpu backend but all kernels are jit-compiled to run on cpu.
 
+NOTE: Just an example and not all is implemented.
+
 ## How to enable this backend
 
 * Clone https://github.com/tensorflow/tensorflow
