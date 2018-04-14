@@ -8,7 +8,7 @@ NOTE: Just an example and not all is implemented.
 
 * Clone https://github.com/tensorflow/tensorflow
 * Clone this https://github.com/wehu/npu_backend to tensorflow/compiler/plugin
-* Run configure to enable jit by default
+* Run `configure` to enable jit by default
 * Change tensorflow/compiler/plugin/BUILD to add this backend
 ```
 --- a/tensorflow/compiler/plugin/BUILD
