@@ -1,6 +1,6 @@
 # npu_backend
 
-This is a tenserflow backend which is like a gpu backend but all kernels is jit compiled to run on cpu.
+This is a tenserflow backend which is like a gpu backend but all kernels are jit-compiled to run on cpu.
 
 ## How to enable this backend
 
