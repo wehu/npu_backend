@@ -22,7 +22,7 @@ NOTE: Just an example and not all is implemented.
      ],
  )
 ```
-* Since this backend uses the boost preprocessor and boost into WORKSPACE
+* Since this backend uses the boost preprocessor, add boost into WORKSPACE
 ```
 git_repository(
     name = "com_github_nelhage_rules_boost",
